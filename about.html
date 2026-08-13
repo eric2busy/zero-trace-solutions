@@ -1,16 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>About — Zero Trace</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={theme:{extend:{colors:{primary:'#0083F5',dark:'#262626',muted:'#6C6C6C',border:'#D3D3D3'}}}}</script>
-<style>@font-face{font-family:'Cal Sans';src:url(https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff2) format('woff2')}@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');body{font-family:Inter,system-ui,sans-serif}.font-display{font-family:'Cal Sans',Inter,system-ui,sans-serif}.soft-gradient-top{background:radial-gradient(ellipse 140% 90% at 15% -5%,rgba(0,131,245,.16) 0%,transparent 55%),linear-gradient(180deg,#eef6ff 0%,#fff 70%)}</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About — Zero Trace Solutions</title>
+  <meta name="description" content="Zero Trace Solutions — hospital-grade sanitizing for offices, classrooms, and commercial spaces." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#0083F5',
+            dark: '#262626',
+            muted: '#6C6C6C',
+            light: '#F5F5F5',
+            border: '#D3D3D3',
+          },
+          fontFamily: {
+            sans: ['Inter', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            display: ['Cal Sans', 'Inter', 'Helvetica Neue', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+</script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <style>
+    @font-face {
+      font-family: 'Cal Sans';
+      font-style: normal;
+      font-display: swap;
+      font-weight: 400;
+      src: url(https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff2) format('woff2'),
+           url(https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff) format('woff');
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .font-display {
+      font-family: 'Cal Sans', 'Inter', system-ui, sans-serif;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+    }
+    html { scroll-behavior: smooth; }
+    /* Full-bleed soft gradients from the very top of the viewport */
+    .soft-gradient-top {
+      background:
+        radial-gradient(ellipse 140% 90% at 15% -5%, rgba(0, 131, 245, 0.16) 0%, transparent 55%),
+        radial-gradient(ellipse 100% 80% at 95% 5%, rgba(0, 131, 245, 0.09) 0%, transparent 50%),
+        linear-gradient(180deg, #eef6ff 0%, #ffffff 70%);
+    }
+    .soft-gradient-bottom {
+      background:
+        radial-gradient(ellipse 120% 100% at 50% 110%, rgba(0, 131, 245, 0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 80% 60% at 5% 90%, rgba(0, 131, 245, 0.07) 0%, transparent 45%),
+        linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%);
+    }
+</style>
 </head>
-<body class="bg-white text-dark">
-<header class="fixed top-0 left-0 right-0 z-50 px-4 pt-4"><div class="max-w-6xl mx-auto"><div class="flex items-center justify-between bg-white/80 backdrop-blur-md border border-border/50 rounded-full px-5 py-3 shadow-sm"><a href="/"><img src="/logo.svg" alt="Zero Trace" class="h-7 w-auto"/></a><div class="flex gap-3"><a href="/book.html" class="hidden sm:inline-flex px-4 py-2 bg-dark text-white text-sm rounded-full">Book</a><button id="menuBtn" class="w-8 h-8 flex items-center justify-center"><svg width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M1 1h18M1 7h18M1 13h18" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg></button></div></div></div></header>
-<div id="mobileMenu" class="fixed inset-0 z-[60] bg-white flex-col items-center justify-center gap-8 text-xl font-medium hidden"><a href="/" class="menu-link">Home</a><a href="/about.html" class="menu-link">About</a><a href="/faq.html" class="menu-link">FAQ</a><a href="/contact.html" class="menu-link">Contact</a><a href="/book.html" class="menu-link px-6 py-3 bg-primary text-white rounded-full mt-2">Schedule Walkthrough</a><button id="closeMenu" class="absolute top-6 right-6 text-3xl">&times;</button></div>
-<main class="soft-gradient-top pt-28 pb-16 px-5 min-h-screen"><div class="max-w-2xl mx-auto"><div class="text-xs font-bold tracking-wider text-primary mb-3">ABOUT</div><h1 class="font-display text-3xl md:text-4xl mb-6">Quiet competence, on repeat.</h1><div class="text-muted text-lg space-y-4"><p>Zero Trace Solutions specializes in sanitizing high-traffic commercial spaces — offices, classrooms, and client-facing environments — using precision misting and hospital-grade solutions.</p><p>We are not a traditional cleaning company. We don’t sweep, mop, or dust unless a job specifically requires it. Our focus is thorough, discreet sanitizing that leaves nothing behind but protected surfaces and peace of mind.</p><p>Serving the Inland Empire &amp; San Bernardino Valley.</p></div><a href="/book.html" class="inline-flex mt-10 px-6 py-3.5 bg-primary text-white rounded-full text-sm">Schedule a walkthrough</a></div></main>
-<footer class="border-t border-border py-8 px-5"><div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted"><a href="/"><img src="/logo.svg" alt="Zero Trace" class="h-6 w-auto"/></a><div>©2026 Zero Trace Solutions</div><a href="mailto:support@zerotraceusa.com">support@zerotraceusa.com</a></div></footer>
-<script>const menuBtn=document.getElementById('menuBtn'),mobileMenu=document.getElementById('mobileMenu'),closeMenu=document.getElementById('closeMenu');function openMenu(){mobileMenu.classList.remove('hidden');mobileMenu.classList.add('flex');document.body.style.overflow='hidden'}function closeMenuFn(){mobileMenu.classList.add('hidden');mobileMenu.classList.remove('flex');document.body.style.overflow=''}menuBtn?.addEventListener('click',openMenu);closeMenu?.addEventListener('click',closeMenuFn);document.querySelectorAll('.menu-link').forEach(l=>l.addEventListener('click',closeMenuFn));</script>
-</body></html>
+<body class="bg-white text-dark antialiased">
+  <header class="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-center justify-between bg-white/80 backdrop-blur-md border border-border/50 rounded-full px-5 py-3 shadow-sm">
+        <a href="/" class="flex items-center">
+          <img src="/logo.svg" alt="Zero Trace Solutions" class="h-7 w-auto" />
+        </a>
+        <div class="flex items-center gap-3">
+          <a href="/book.html" class="hidden sm:inline-flex items-center px-4 py-2 bg-dark text-white text-sm rounded-full hover:bg-black transition">Book</a>
+          <button id="menuBtn" class="w-8 h-8 flex items-center justify-center" aria-label="Menu">
+            <svg width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M1 1h18M1 7h18M1 13h18" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Menu: use flex + hidden, toggle both -->
+  <div id="mobileMenu" class="fixed inset-0 z-[60] bg-white flex-col items-center justify-center gap-8 text-xl font-medium hidden">
+    <a href="/" class="menu-link font-display text-dark hover:text-primary transition">Home</a>
+    <a href="/about.html" class="menu-link font-display text-dark hover:text-primary transition">About</a>
+    <a href="/faq.html" class="menu-link font-display text-dark hover:text-primary transition">FAQ</a>
+    <a href="/contact.html" class="menu-link font-display text-dark hover:text-primary transition">Contact</a>
+    <a href="/book.html" class="menu-link px-6 py-3 bg-primary text-white rounded-full mt-2">Schedule Walkthrough</a>
+    <button id="closeMenu" class="absolute top-6 right-6 w-10 h-10 flex items-center justify-center text-3xl text-dark" aria-label="Close">&times;</button>
+  </div>
+
+  <main class="soft-gradient-top pt-28 pb-16 px-5 min-h-screen">
+    <div class="max-w-2xl mx-auto">
+      <div class="text-xs font-bold tracking-wider text-primary mb-3">ABOUT</div>
+      <h1 class="font-display text-3xl md:text-4xl mb-6">Quiet competence, on repeat.</h1>
+      <div class="text-muted text-lg leading-relaxed space-y-4">
+        <p>Zero Trace Solutions specializes in sanitizing high-traffic commercial spaces — offices, classrooms, and client-facing environments — using precision misting and hospital-grade solutions.</p>
+        <p>We are not a traditional cleaning company. We don’t sweep, mop, or dust unless a job specifically requires it. Our focus is thorough, discreet sanitizing that leaves nothing behind but protected surfaces and peace of mind.</p>
+        <p>Serving the Inland Empire &amp; San Bernardino Valley.</p>
+      </div>
+      <a href="/book.html" class="inline-flex items-center gap-2 mt-10 px-6 py-3.5 bg-primary text-white rounded-full text-sm font-medium shadow-md hover:bg-blue-600 transition">Schedule a walkthrough</a>
+    </div>
+  </main>
+
+  <footer class="border-t border-border py-8 px-5">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted">
+      <a href="/" class="flex items-center"><img src="/logo.svg" alt="Zero Trace Solutions" class="h-6 w-auto" /></a>
+      <div>©2026 Zero Trace Solutions. All rights reserved.</div>
+      <a href="mailto:support@zerotraceusa.com" class="hover:text-primary">support@zerotraceusa.com</a>
+    </div>
+  </footer>
+  <script>
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const closeMenu = document.getElementById('closeMenu');
+    function openMenu() {
+      mobileMenu.classList.remove('hidden');
+      mobileMenu.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeMenuFn() {
+      mobileMenu.classList.add('hidden');
+      mobileMenu.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+    menuBtn?.addEventListener('click', openMenu);
+    closeMenu?.addEventListener('click', closeMenuFn);
+    document.querySelectorAll('.menu-link').forEach(link => {
+      link.addEventListener('click', closeMenuFn);
+    });
+  </script>
+
+</body>
+</html>

@@ -1,2 +1,6 @@
-# zero-trace-solutions
-Zero Trace Solutions website - sanitizing service
+# Zero Trace Solutions
+
+Hospital-grade sanitizing website.
+
+Live: https://zero-trace-solutions.vercel.app
+
