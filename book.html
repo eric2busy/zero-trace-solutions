@@ -155,8 +155,16 @@
       e.preventDefault();
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending…';
+      formMessage.classList.add('hidden');
       try {
-        await new Promise(r => setTimeout(r, 800));
+        const data = Object.fromEntries(new FormData(form).entries());
+        const res = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload.error || 'Request failed');
         form.reset();
         formMessage.textContent = 'Thanks — we’ll be in touch shortly to schedule your walkthrough.';
         formMessage.className = 'text-sm text-center text-green-600';
