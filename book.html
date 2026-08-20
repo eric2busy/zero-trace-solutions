@@ -66,7 +66,7 @@
           <img src="/logo.svg" alt="Zero Trace Solutions" class="h-7 w-auto" />
         </a>
         <div class="flex items-center gap-3">
-          <a href="/book.html" class="hidden sm:inline-flex items-center px-4 py-2 bg-dark text-white text-sm rounded-full hover:bg-black transition">Book</a>
+          <a href="/book.html" class="hidden sm:inline-flex items-center px-4 py-2 bg-dark text-white text-sm rounded-full hover:bg-black transition">Schedule</a>
           <button id="menuBtn" class="w-8 h-8 flex items-center justify-center" aria-label="Menu">
             <svg width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M1 1h18M1 7h18M1 13h18" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg>
           </button>
@@ -81,7 +81,7 @@
     <a href="/about.html" class="menu-link font-display text-dark hover:text-primary transition">About</a>
     <a href="/faq.html" class="menu-link font-display text-dark hover:text-primary transition">FAQ</a>
     <a href="/contact.html" class="menu-link font-display text-dark hover:text-primary transition">Contact</a>
-    <a href="/book.html" class="menu-link px-6 py-3 bg-primary text-white rounded-full mt-2">Schedule Walkthrough</a>
+    <a href="/book.html" class="menu-link px-6 py-3 bg-primary text-white rounded-full mt-2">Schedule a walkthrough</a>
     <button id="closeMenu" class="absolute top-6 right-6 w-10 h-10 flex items-center justify-center text-3xl text-dark" aria-label="Close">&times;</button>
   </div>
 
@@ -90,7 +90,7 @@
       <div class="text-center mb-8">
         <div class="text-xs font-bold tracking-wider text-primary mb-2">REQUEST A WALKTHROUGH</div>
         <h1 class="font-display text-3xl md:text-4xl">Tell us about your space</h1>
-        <p class="text-muted mt-2">We’ll follow up shortly to confirm timing.</p>
+        <p class="text-muted mt-2">Share a few details about your space. We’ll follow up to confirm coverage and timing—no obligation.</p>
       </div>
       <form id="walkthroughForm" class="space-y-4 bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-border">
         <div class="grid sm:grid-cols-2 gap-4">
@@ -113,7 +113,7 @@
         </div>
         <div><label class="block text-xs font-medium text-muted mb-1">Location / City *</label><input type="text" name="location" required class="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" /></div>
         <div><label class="block text-xs font-medium text-muted mb-1">Additional Notes</label><textarea name="notes" rows="3" class="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"></textarea></div>
-        <button type="submit" id="submitBtn" class="w-full py-4 bg-primary text-white rounded-full font-medium hover:bg-blue-600 transition">Request Walkthrough</button>
+        <button type="submit" id="submitBtn" class="w-full py-4 bg-primary text-white rounded-full font-medium hover:bg-blue-600 transition">Schedule a walkthrough</button>
         <p id="formMessage" class="text-sm text-center hidden"></p>
       </form>
     </div>
@@ -175,7 +175,7 @@
         formMessage.classList.remove('hidden');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Request Walkthrough';
+        submitBtn.textContent = 'Schedule a walkthrough';
       }
     });
   </script>
