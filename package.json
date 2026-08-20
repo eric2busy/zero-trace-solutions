@@ -1,0 +1,7 @@
+{
+  "name": "zero-trace-solutions",
+  "private": true,
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}

@@ -1,19 +1,24 @@
 /**
  * POST /api/leads
- * Accepts walkthrough form submissions and creates a row in the
- * Notion "Walkthrough Requests" database.
+ * Creates a Notion row + Google Calendar event for walkthrough requests.
  *
- * Required env vars (Vercel project settings):
- *   NOTION_TOKEN        – Notion integration secret (ntn_... or secret_...)
- *   NOTION_DATABASE_ID  – 896228ea48af4523a8cb0f099ca800c2
+ * Env (Vercel):
+ *   NOTION_TOKEN
+ *   NOTION_DATABASE_ID
+ *   GOOGLE_CLIENT_EMAIL      – service account email
+ *   GOOGLE_PRIVATE_KEY       – service account private key (PEM, \n escaped)
+ *   GOOGLE_CALENDAR_ID       – calendar id (often schedule.zts@gmail.com for primary)
  */
+
+const { google } = require('googleapis');
 
 const DATABASE_ID = process.env.NOTION_DATABASE_ID || '896228ea48af4523a8cb0f099ca800c2';
 const NOTION_VERSION = '2022-06-28';
 
 function corsHeaders(origin) {
-  // Allow same-origin + localhost for testing
   const allowed = [
+    'https://zerotraceusa.com',
+    'https://www.zerotraceusa.com',
     'https://zero-trace-solutions.vercel.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
@@ -41,6 +46,104 @@ function sanitize(str, max = 500) {
   return str.trim().slice(0, max);
 }
 
+/** Map preferred time → America/Los_Angeles window on preferredDate */
+function eventTimes(preferredDate, preferredTime) {
+  // All-day if no date
+  if (!preferredDate || !/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) {
+    return null;
+  }
+
+  const time = (preferredTime || '').toLowerCase();
+  // Windows in local PT (form is SoCal business)
+  let startHour = 9;
+  let endHour = 12;
+  if (time === 'afternoon') {
+    startHour = 13;
+    endHour = 17;
+  } else if (time === 'flexible' || !time) {
+    // All-day event
+    return {
+      start: { date: preferredDate },
+      end: { date: preferredDate },
+    };
+  }
+  // Morning default 9–12
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const start = `${preferredDate}T${pad(startHour)}:00:00`;
+  const end = `${preferredDate}T${pad(endHour)}:00:00`;
+  return {
+    start: { dateTime: start, timeZone: 'America/Los_Angeles' },
+    end: { dateTime: end, timeZone: 'America/Los_Angeles' },
+  };
+}
+
+async function createCalendarEvent(fields) {
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  const privateKey = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+  const calendarId = process.env.GOOGLE_CALENDAR_ID || 'schedule.zts@gmail.com';
+
+  if (!clientEmail || !privateKey) {
+    console.warn('Google Calendar env not set — skipping calendar event');
+    return null;
+  }
+
+  const times = eventTimes(fields.preferredDate, fields.preferredTime);
+  if (!times) {
+    console.warn('No preferred date — skipping calendar event');
+    return null;
+  }
+
+  const auth = new google.auth.JWT({
+    email: clientEmail,
+    key: privateKey,
+    scopes: ['https://www.googleapis.com/auth/calendar'],
+  });
+
+  const calendar = google.calendar({ version: 'v3', auth });
+
+  const title = `Walkthrough – ${fields.name}${
+    fields.businessType ? ` (${fields.businessType})` : ''
+  }`;
+
+  const description = [
+    `Lead from zerotraceusa.com`,
+    `Name: ${fields.name}`,
+    fields.phone ? `Phone: ${fields.phone}` : null,
+    fields.email ? `Email: ${fields.email}` : null,
+    fields.businessType ? `Business type: ${fields.businessType}` : null,
+    fields.preferredTime ? `Preferred time: ${fields.preferredTime}` : null,
+    fields.location ? `Location: ${fields.location}` : null,
+    fields.notes ? `Notes: ${fields.notes}` : null,
+    ``,
+    `Status: New — confirm in Notion before treating as locked.`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const event = {
+    summary: title,
+    description,
+    location: fields.location || undefined,
+    start: times.start,
+    end: times.end,
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'email', minutes: 24 * 60 },
+        { method: 'popup', minutes: 60 },
+      ],
+    },
+  };
+
+  const result = await calendar.events.insert({
+    calendarId,
+    requestBody: event,
+  });
+
+  return result.data.id;
+}
+
 module.exports = async function handler(req, res) {
   const origin = req.headers.origin || '';
 
@@ -66,7 +169,6 @@ module.exports = async function handler(req, res) {
       return json(res, 400, { error: 'Invalid JSON' }, origin);
     }
   }
-  // Vercel may already parse JSON; also handle raw stream edge case
   if (!body || typeof body !== 'object') {
     return json(res, 400, { error: 'Missing body' }, origin);
   }
@@ -78,15 +180,10 @@ module.exports = async function handler(req, res) {
   const preferredDate = sanitize(body.preferredDate, 20);
   const preferredTime = sanitize(body.preferredTime, 40);
   const location = sanitize(body.location, 200);
-  const notes = sanitize(body.notes, 2000);
+  const notes = sanitize(body.notes, 1000);
 
-  if (!name || !phone || !email || !businessType || !location) {
-    return json(res, 400, { error: 'Missing required fields' }, origin);
-  }
-
-  // Basic email check
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return json(res, 400, { error: 'Invalid email' }, origin);
+  if (!name || !phone || !email || !location) {
+    return json(res, 400, { error: 'Name, phone, email, and location are required' }, origin);
   }
 
   const allowedBusiness = ['Office', 'Classroom', 'Commercial', 'Other'];
@@ -160,7 +257,29 @@ module.exports = async function handler(req, res) {
       );
     }
 
-    return json(res, 200, { ok: true, id: data.id }, origin);
+    // Calendar is best-effort: lead is already saved if this fails
+    let calendarEventId = null;
+    try {
+      calendarEventId = await createCalendarEvent({
+        name,
+        phone,
+        email,
+        businessType,
+        preferredDate,
+        preferredTime,
+        location,
+        notes,
+      });
+    } catch (calErr) {
+      console.error('Google Calendar error', calErr?.message || calErr);
+    }
+
+    return json(
+      res,
+      200,
+      { ok: true, id: data.id, calendarEventId: calendarEventId || undefined },
+      origin
+    );
   } catch (err) {
     console.error('Lead submit error', err);
     return json(res, 500, { error: 'Server error' }, origin);
