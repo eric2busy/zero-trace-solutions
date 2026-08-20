@@ -36,7 +36,24 @@
            url(https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff) format('woff');
     }
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', system-ui, sans-serif; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      color: #262626;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    /* Consistent prose scale */
+    .prose-body { font-size: 1.0625rem; line-height: 1.7; color: #6C6C6C; }
+    .prose-card { font-size: 0.875rem; line-height: 1.6; color: #6C6C6C; }
+    .prose-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: none;
+      color: #0083F5;
+    }
     .font-display {
       font-family: 'Cal Sans', 'Inter', system-ui, sans-serif;
       font-weight: 400;
@@ -89,7 +106,7 @@
     <div class="max-w-xl mx-auto text-center">
       <div class="text-xs font-bold tracking-wider text-primary mb-3">CONTACT</div>
       <h1 class="font-display text-3xl md:text-4xl mb-4">Get in touch</h1>
-      <p class="text-muted text-lg mb-10">Questions about service, coverage, or scheduling? Email us anytime—or schedule a walkthrough and we’ll take it from there.</p>
+      <p class="prose-body mb-10">Questions about service, coverage, or scheduling? Email us anytime—or schedule a walkthrough and we’ll take it from there.</p>
       <div class="bg-white rounded-2xl border border-border p-8 shadow-sm space-y-4 text-left">
         <div><div class="text-xs font-medium text-muted mb-1">Email</div><a href="mailto:support@zerotraceusa.com" class="text-primary font-medium hover:underline">support@zerotraceusa.com</a></div>
         <div><div class="text-xs font-medium text-muted mb-1">Service area</div><p>Inland Empire &amp; San Bernardino Valley</p></div>

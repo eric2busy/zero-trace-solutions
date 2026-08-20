@@ -36,7 +36,24 @@
            url(https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff) format('woff');
     }
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', system-ui, sans-serif; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      color: #262626;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    /* Consistent prose scale */
+    .prose-body { font-size: 1.0625rem; line-height: 1.7; color: #6C6C6C; }
+    .prose-card { font-size: 0.875rem; line-height: 1.6; color: #6C6C6C; }
+    .prose-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: none;
+      color: #0083F5;
+    }
     .font-display {
       font-family: 'Cal Sans', 'Inter', system-ui, sans-serif;
       font-weight: 400;
@@ -88,55 +105,56 @@
   <main class="soft-gradient-top pt-28 pb-16 px-5 min-h-screen">
     <div class="max-w-2xl mx-auto">
       <div class="text-xs font-bold tracking-wider text-primary mb-3">FAQ</div>
-      <h1 class="font-display text-3xl md:text-4xl mb-10">Common questions</h1>
+      <h1 class="font-display text-3xl md:text-4xl mb-3">Common questions</h1>
+      <p class="prose-body mb-10 max-w-xl">Straight answers about sanitizing, scheduling, coverage, and what to expect.</p>
       <div class="space-y-8">
         <div>
-          <h2 class="font-display text-xl mb-2">Is this the same as cleaning?</h2>
-          <p class="text-muted">No. Cleaning removes visible dirt—sweeping, mopping, dusting. We sanitize: treating high-touch and high-traffic surfaces with an electrostatic misting system and hospital-grade, EPA-registered solutions. Many clients keep their existing cleaning crew and use us for targeted protection between cleans.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">Is this the same as cleaning?</h2>
+          <p class="prose-body mt-1">No. Cleaning removes visible dirt—sweeping, mopping, dusting. We sanitize: treating high-touch and high-traffic surfaces with an electrostatic misting system and hospital-grade, EPA-registered solutions. Many clients keep their existing cleaning crew and use us for targeted protection between cleans.</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">What is electrostatic misting?</h2>
-          <p class="text-muted">It’s a low-volume spray system that applies a fine, even layer of sanitizer to surfaces—including vertical and hard-to-reach touchpoints. Coverage is more uniform than wiping alone, and the mist dries quickly without leaving a film.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">What is electrostatic misting?</h2>
+          <p class="prose-body mt-1">It’s a low-volume spray system that applies a fine, even layer of sanitizer to surfaces—including vertical and hard-to-reach touchpoints. Coverage is more uniform than wiping alone, and the mist dries quickly without leaving a film.</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">How long until the space can be used again?</h2>
-          <p class="text-muted">Most spaces are ready to reoccupy within minutes. The mist dries invisibly and leaves no residue. We’ll confirm any product-specific dwell times during your walkthrough if your space has special requirements.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">How long until the space can be used again?</h2>
+          <p class="prose-body mt-1">Most spaces are ready to reoccupy within minutes. The mist dries invisibly and leaves no residue. We’ll confirm any product-specific dwell times during your walkthrough if your space has special requirements.</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">Will it leave a smell or residue?</h2>
-          <p class="text-muted">No sticky film and no harsh lingering scent. Surfaces should look and feel normal—protected, not “treated.”</p>
+          <h2 class="font-display text-xl mb-2 text-dark">Will it leave a smell or residue?</h2>
+          <p class="prose-body mt-1">No sticky film and no harsh lingering scent. Surfaces should look and feel normal—protected, not “treated.”</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">What surfaces do you treat?</h2>
-          <p class="text-muted">High-touch and high-traffic zones: desks and workstations, door handles and push plates, shared equipment, conference tables, counters, restroom touchpoints, and lobby or reception surfaces. Your walkthrough defines the exact scope for your space.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">What surfaces do you treat?</h2>
+          <p class="prose-body mt-1">High-touch and high-traffic zones: desks and workstations, door handles and push plates, shared equipment, conference tables, counters, restroom touchpoints, and lobby or reception surfaces. Your walkthrough defines the exact scope for your space.</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">What areas do you serve?</h2>
-          <p class="text-muted">Inland Empire and San Bernardino Valley. If you’re nearby outside that core area, contact us—we’ll confirm whether we can cover your location.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">What areas do you serve?</h2>
+          <p class="prose-body mt-1">Inland Empire and San Bernardino Valley. If you’re nearby outside that core area, contact us—we’ll confirm whether we can cover your location.</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">Can I set a recurring schedule?</h2>
-          <p class="text-muted">Yes. Many clients book one-time visits after events or illness reports; others set weekly, biweekly, or monthly maintenance so protection stays consistent. We’ll recommend a cadence based on traffic and risk.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">Can I set a recurring schedule?</h2>
+          <p class="prose-body mt-1">Yes. Many clients book one-time visits after events or illness reports; others set weekly, biweekly, or monthly maintenance so protection stays consistent. We’ll recommend a cadence based on traffic and risk.</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">How does pricing work?</h2>
-          <p class="text-muted">Pricing depends on square footage, surface density, access, and frequency. There’s no one-size online quote—after a short walkthrough we provide a clear proposal for single visits or a recurring plan.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">How does pricing work?</h2>
+          <p class="prose-body mt-1">Pricing depends on square footage, surface density, access, and frequency. There’s no one-size online quote—after a short walkthrough we provide a clear proposal for single visits or a recurring plan.</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">Do people need to leave during service?</h2>
-          <p class="text-muted">We plan around your operations. Many treatments happen after hours or in phased zones so work continues elsewhere. Your walkthrough is where we lock in the least disruptive approach.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">Do people need to leave during service?</h2>
+          <p class="prose-body mt-1">We plan around your operations. Many treatments happen after hours or in phased zones so work continues elsewhere. Your walkthrough is where we lock in the least disruptive approach.</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">Is this safe for schools and offices?</h2>
-          <p class="text-muted">We use hospital-grade, EPA-registered solutions appropriate for commercial environments when applied as directed. We’ll review product details and any site-specific concerns during the walkthrough.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">Is this safe for schools and offices?</h2>
+          <p class="prose-body mt-1">We use hospital-grade, EPA-registered solutions appropriate for commercial environments when applied as directed. We’ll review product details and any site-specific concerns during the walkthrough.</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">What happens on the walkthrough?</h2>
-          <p class="text-muted">A brief on-site visit to understand layout, high-touch areas, access, and timing. You’ll get a recommended scope and pricing—no obligation to book service the same day.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">What happens on the walkthrough?</h2>
+          <p class="prose-body mt-1">A brief on-site visit to understand layout, high-touch areas, access, and timing. You’ll get a recommended scope and pricing—no obligation to book service the same day.</p>
         </div>
         <div>
-          <h2 class="font-display text-xl mb-2">How do I get started?</h2>
-          <p class="text-muted">Schedule a walkthrough. Share a few details about your space, and we’ll follow up to confirm timing and next steps.</p>
+          <h2 class="font-display text-xl mb-2 text-dark">How do I get started?</h2>
+          <p class="prose-body mt-1">Schedule a walkthrough. Share a few details about your space, and we’ll follow up to confirm timing and next steps.</p>
         </div>
       </div>
       <a href="/book.html" class="inline-flex items-center gap-2 mt-12 px-6 py-3.5 bg-primary text-white rounded-full text-sm font-medium shadow-md hover:bg-blue-600 transition">Schedule a walkthrough</a>
