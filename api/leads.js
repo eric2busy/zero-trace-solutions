@@ -7,7 +7,10 @@
  *   NOTION_DATABASE_ID
  *   GOOGLE_CLIENT_EMAIL      – service account email
  *   GOOGLE_PRIVATE_KEY       – service account private key (PEM, \n escaped)
- *   GOOGLE_CALENDAR_ID       – calendar id (often schedule.zts@gmail.com for primary)
+ *   GOOGLE_CALENDAR_ID       – calendar id
+ *   RESEND_API_KEY           – Resend API key (lead alert + client confirmation)
+ *   LEAD_ALERT_TO            – your inbox (e.g. zerotraceusa@protonmail.com)
+ *   LEAD_ALERT_FROM          – verified domain sender (default solutions@zerotraceusa.com)
  */
 
 const { google } = require('googleapis');
@@ -145,14 +148,48 @@ async function createCalendarEvent(fields) {
 }
 
 
-async function sendLeadAlert(fields) {
-  const to = process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com';
+function resendFrom() {
+  return (
+    process.env.LEAD_ALERT_FROM ||
+    'Zero Trace Solutions <solutions@zerotraceusa.com>'
+  );
+}
+
+async function resendSend({ to, subject, text, replyTo }) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) {
-    console.warn('RESEND_API_KEY not set — skipping lead email alert');
+    console.warn('RESEND_API_KEY not set — skipping email');
     return false;
   }
 
+  const body = {
+    from: resendFrom(),
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    text,
+  };
+  if (replyTo) body.reply_to = replyTo;
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    console.error('Resend error', res.status, errBody);
+    return false;
+  }
+  return true;
+}
+
+/** Internal alert to your inbox (Proton, etc.) */
+async function sendLeadAlert(fields) {
+  const to = process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com';
   const subject = `New walkthrough request — ${fields.name}`;
   const text = [
     'New walkthrough request from zerotraceusa.com',
@@ -171,28 +208,45 @@ async function sendLeadAlert(fields) {
     .filter((line) => line !== null)
     .join('\n');
 
-  const from = process.env.LEAD_ALERT_FROM || 'Zero Trace Leads <onboarding@resend.dev>';
-
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${resendKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      text,
-    }),
+  return resendSend({
+    to,
+    subject,
+    text,
+    replyTo: fields.email,
   });
+}
 
-  if (!res.ok) {
-    const errBody = await res.text();
-    console.error('Resend error', res.status, errBody);
-    return false;
-  }
-  return true;
+/** Confirmation email to the person who submitted the form */
+async function sendClientConfirmation(fields) {
+  if (!fields.email) return false;
+
+  const subject = 'We received your walkthrough request — Zero Trace Solutions';
+  const text = [
+    `Hi ${fields.name},`,
+    '',
+    'Thanks for reaching out to Zero Trace Solutions. We received your walkthrough request and will follow up shortly to confirm coverage and timing.',
+    '',
+    'Here is a copy of what you submitted:',
+    `• Location: ${fields.location}`,
+    fields.businessType ? `• Business type: ${fields.businessType}` : null,
+    fields.preferredDate ? `• Preferred date: ${fields.preferredDate}` : null,
+    fields.preferredTime ? `• Preferred time: ${fields.preferredTime}` : null,
+    '',
+    'If anything looks off or you need to update details, reply to this email or contact support@zerotraceusa.com.',
+    '',
+    '— Zero Trace Solutions',
+    'Inland Empire & San Bernardino Valley',
+    'https://zerotraceusa.com',
+  ]
+    .filter((line) => line !== null)
+    .join('\n');
+
+  return resendSend({
+    to: fields.email,
+    subject,
+    text,
+    replyTo: process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com',
+  });
 }
 
 module.exports = async function handler(req, res) {
@@ -325,20 +379,29 @@ module.exports = async function handler(req, res) {
       console.error('Google Calendar error', calErr?.message || calErr);
     }
 
+    const mailFields = {
+      name,
+      phone,
+      email,
+      businessType,
+      preferredDate,
+      preferredTime,
+      location,
+      notes,
+    };
+
     let emailSent = false;
     try {
-      emailSent = await sendLeadAlert({
-        name,
-        phone,
-        email,
-        businessType,
-        preferredDate,
-        preferredTime,
-        location,
-        notes,
-      });
+      emailSent = await sendLeadAlert(mailFields);
     } catch (mailErr) {
       console.error('Lead alert email error', mailErr?.message || mailErr);
+    }
+
+    let clientEmailSent = false;
+    try {
+      clientEmailSent = await sendClientConfirmation(mailFields);
+    } catch (clientMailErr) {
+      console.error('Client confirmation email error', clientMailErr?.message || clientMailErr);
     }
 
     return json(
@@ -349,6 +412,7 @@ module.exports = async function handler(req, res) {
         id: data.id,
         calendarEventId: calendarEventId || undefined,
         emailSent: emailSent || undefined,
+        clientEmailSent: clientEmailSent || undefined,
       },
       origin
     );
