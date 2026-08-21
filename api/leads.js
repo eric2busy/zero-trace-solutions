@@ -144,6 +144,57 @@ async function createCalendarEvent(fields) {
   return result.data.id;
 }
 
+
+async function sendLeadAlert(fields) {
+  const to = process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com';
+  const resendKey = process.env.RESEND_API_KEY;
+  if (!resendKey) {
+    console.warn('RESEND_API_KEY not set — skipping lead email alert');
+    return false;
+  }
+
+  const subject = `New walkthrough request — ${fields.name}`;
+  const text = [
+    'New walkthrough request from zerotraceusa.com',
+    '',
+    `Name: ${fields.name}`,
+    `Phone: ${fields.phone}`,
+    `Email: ${fields.email}`,
+    `Business type: ${fields.businessType || '—'}`,
+    `Preferred date: ${fields.preferredDate || '—'}`,
+    `Preferred time: ${fields.preferredTime || '—'}`,
+    `Location: ${fields.location}`,
+    fields.notes ? `Notes: ${fields.notes}` : null,
+    '',
+    'Saved to Notion. Check Google Calendar if a preferred date was provided.',
+  ]
+    .filter((line) => line !== null)
+    .join('\n');
+
+  const from = process.env.LEAD_ALERT_FROM || 'Zero Trace Leads <onboarding@resend.dev>';
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      subject,
+      text,
+    }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    console.error('Resend error', res.status, errBody);
+    return false;
+  }
+  return true;
+}
+
 module.exports = async function handler(req, res) {
   const origin = req.headers.origin || '';
 
@@ -274,10 +325,31 @@ module.exports = async function handler(req, res) {
       console.error('Google Calendar error', calErr?.message || calErr);
     }
 
+    let emailSent = false;
+    try {
+      emailSent = await sendLeadAlert({
+        name,
+        phone,
+        email,
+        businessType,
+        preferredDate,
+        preferredTime,
+        location,
+        notes,
+      });
+    } catch (mailErr) {
+      console.error('Lead alert email error', mailErr?.message || mailErr);
+    }
+
     return json(
       res,
       200,
-      { ok: true, id: data.id, calendarEventId: calendarEventId || undefined },
+      {
+        ok: true,
+        id: data.id,
+        calendarEventId: calendarEventId || undefined,
+        emailSent: emailSent || undefined,
+      },
       origin
     );
   } catch (err) {
