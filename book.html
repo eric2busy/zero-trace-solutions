@@ -10,102 +10,37 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Zero Trace Solutions" />
   <meta property="og:title" content="Schedule a Walkthrough — Zero Trace Solutions" />
-  <meta property="og:description" content="Request a walkthrough for hospital-grade sanitizing. We’ll confirm coverage and timing." />
+  <meta property="og:description" content="Request a walkthrough for hospital-grade sanitizing and choose a verified available time." />
   <meta property="og:url" content="https://zerotraceusa.com/book.html" />
   <meta property="og:image" content="https://zerotraceusa.com/logo.svg" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Schedule a Walkthrough — Zero Trace Solutions" />
-  <meta name="twitter:description" content="Request a walkthrough for hospital-grade sanitizing. We’ll confirm coverage and timing." />
-  <meta name="twitter:image" content="https://zerotraceusa.com/logo.svg" />
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#0083F5',
-            dark: '#262626',
-            muted: '#6C6C6C',
-            light: '#F5F5F5',
-            border: '#D3D3D3',
-          },
-          fontFamily: {
-            sans: ['Inter', 'Helvetica Neue', 'Arial', 'sans-serif'],
-            display: ['Cal Sans', 'Inter', 'Helvetica Neue', 'Arial', 'sans-serif'],
-          }
-        }
-      }
-    }
-</script>
+    tailwind.config = { theme: { extend: { colors: { primary:'#0083F5', dark:'#262626', muted:'#6C6C6C', light:'#F5F5F5', border:'#D3D3D3' }, fontFamily: { sans:['Inter','Helvetica Neue','Arial','sans-serif'], display:['Cal Sans','Inter','Helvetica Neue','Arial','sans-serif'] } } } }
+  </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <style>
-    @font-face {
-      font-family: 'Cal Sans';
-      font-style: normal;
-      font-display: swap;
-      font-weight: 400;
-      src: url(https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff2) format('woff2'),
-           url(https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff) format('woff');
-    }
+    @font-face { font-family:'Cal Sans'; font-style:normal; font-display:swap; font-weight:400; src:url(https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff2) format('woff2'); }
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      color: #262626;
-      font-size: 16px;
-      line-height: 1.6;
-    }
-    /* Consistent prose scale */
-    .prose-body { font-size: 1.0625rem; line-height: 1.7; color: #6C6C6C; }
-    .prose-card { font-size: 0.875rem; line-height: 1.6; color: #6C6C6C; }
-    .prose-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: none;
-      color: #0083F5;
-    }
-    .font-display {
-      font-family: 'Cal Sans', 'Inter', system-ui, sans-serif;
-      font-weight: 400;
-      letter-spacing: -0.02em;
-    }
-    html { scroll-behavior: smooth; }
-    /* Full-bleed soft gradients from the very top of the viewport */
-    .soft-gradient-top {
-      background:
-        radial-gradient(ellipse 140% 90% at 15% -5%, rgba(0, 131, 245, 0.16) 0%, transparent 55%),
-        radial-gradient(ellipse 100% 80% at 95% 5%, rgba(0, 131, 245, 0.09) 0%, transparent 50%),
-        linear-gradient(180deg, #eef6ff 0%, #ffffff 70%);
-    }
-    .soft-gradient-bottom {
-      background:
-        radial-gradient(ellipse 120% 100% at 50% 110%, rgba(0, 131, 245, 0.14) 0%, transparent 55%),
-        radial-gradient(ellipse 80% 60% at 5% 90%, rgba(0, 131, 245, 0.07) 0%, transparent 45%),
-        linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%);
-    }
-</style>
+    body { font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; color:#262626; font-size:16px; line-height:1.6; }
+    .font-display { font-family:'Cal Sans','Inter',system-ui,sans-serif; font-weight:400; letter-spacing:-0.02em; }
+    .soft-gradient-top { background:radial-gradient(ellipse 140% 90% at 15% -5%,rgba(0,131,245,.16) 0%,transparent 55%),radial-gradient(ellipse 100% 80% at 95% 5%,rgba(0,131,245,.09) 0%,transparent 50%),linear-gradient(180deg,#eef6ff 0%,#fff 70%); }
+    .slot-btn[aria-pressed="true"] { border-color:#0083F5; box-shadow:0 0 0 3px rgba(0,131,245,.14); background:#eef6ff; }
+  </style>
 </head>
 <body class="bg-white text-dark antialiased">
   <header class="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
     <div class="max-w-6xl mx-auto">
       <div class="flex items-center justify-between bg-white/80 backdrop-blur-md border border-border/50 rounded-full px-5 py-3 shadow-sm">
-        <a href="/" class="flex items-center">
-          <img src="/logo.svg" alt="Zero Trace Solutions" class="h-7 w-auto" />
-        </a>
+        <a href="/" class="flex items-center"><img src="/logo.svg" alt="Zero Trace Solutions" class="h-7 w-auto" /></a>
         <div class="flex items-center gap-3">
           <a href="/book.html" class="hidden sm:inline-flex items-center px-4 py-2 bg-dark text-white text-sm rounded-full hover:bg-black transition">Schedule</a>
-          <button id="menuBtn" class="w-8 h-8 flex items-center justify-center" aria-label="Menu">
-            <svg width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M1 1h18M1 7h18M1 13h18" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg>
-          </button>
+          <button id="menuBtn" class="w-8 h-8 flex items-center justify-center" aria-label="Menu"><svg width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M1 1h18M1 7h18M1 13h18" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg></button>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Mobile Menu: use flex + hidden, toggle both -->
   <div id="mobileMenu" class="fixed inset-0 z-[60] bg-white flex-col items-center justify-center gap-8 text-xl font-medium hidden">
     <a href="/" class="menu-link font-display text-dark hover:text-primary transition">Home</a>
     <a href="/about.html" class="menu-link font-display text-dark hover:text-primary transition">About</a>
@@ -118,102 +53,114 @@
   <main class="soft-gradient-top min-h-screen pt-28 pb-16 px-5">
     <div class="max-w-xl mx-auto">
       <div class="text-center mb-8">
-        <div class="text-xs font-bold tracking-wider text-primary mb-2">REQUEST A WALKTHROUGH</div>
+        <div class="text-xs font-bold tracking-wider text-primary mb-2">SCHEDULE A WALKTHROUGH</div>
         <h1 class="font-display text-3xl md:text-4xl">Tell us about your space</h1>
-        <p class="text-muted mt-2">Share a few details about your space. We’ll follow up to confirm coverage and timing—no obligation.</p>
+        <p class="text-muted mt-2">Share a few details, then choose from actual available walkthrough times.</p>
       </div>
+
       <form id="walkthroughForm" class="space-y-4 bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-border">
         <div class="grid sm:grid-cols-2 gap-4">
           <div><label class="block text-xs font-medium text-muted mb-1">Full Name *</label><input type="text" name="name" required class="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" /></div>
           <div><label class="block text-xs font-medium text-muted mb-1">Phone *</label><input type="tel" name="phone" required class="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" /></div>
         </div>
         <div><label class="block text-xs font-medium text-muted mb-1">Email *</label><input type="email" name="email" required class="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" /></div>
-        <div><label class="block text-xs font-medium text-muted mb-1">Business Type *</label>
-          <select name="businessType" required class="w-full px-4 py-3 rounded-xl border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
-            <option value="">Select…</option><option>Office</option><option>Classroom</option><option>Commercial</option><option>Other</option>
-          </select>
-        </div>
+        <div><label class="block text-xs font-medium text-muted mb-1">Business Type *</label><select name="businessType" required class="w-full px-4 py-3 rounded-xl border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"><option value="">Select…</option><option>Office</option><option>Classroom</option><option>Commercial</option><option>Other</option></select></div>
         <div class="grid sm:grid-cols-2 gap-4">
-          <div><label class="block text-xs font-medium text-muted mb-1">Preferred Date</label><input type="date" name="preferredDate" class="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" /></div>
-          <div><label class="block text-xs font-medium text-muted mb-1">Preferred Time</label>
-            <select name="preferredTime" class="w-full px-4 py-3 rounded-xl border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
-              <option>Morning</option><option>Afternoon</option><option>Flexible</option>
-            </select>
-          </div>
+          <div><label class="block text-xs font-medium text-muted mb-1">Preferred Date *</label><input type="date" name="preferredDate" required class="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" /></div>
+          <div><label class="block text-xs font-medium text-muted mb-1">Preferred Time</label><select name="preferredTime" class="w-full px-4 py-3 rounded-xl border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"><option>Morning</option><option>Afternoon</option><option>Flexible</option></select></div>
         </div>
         <div><label class="block text-xs font-medium text-muted mb-1">Location / City *</label><input type="text" name="location" required class="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" /></div>
         <div><label class="block text-xs font-medium text-muted mb-1">Additional Notes</label><textarea name="notes" rows="3" class="w-full px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"></textarea></div>
-        <button type="submit" id="submitBtn" class="w-full py-4 bg-primary text-white rounded-full font-medium hover:bg-blue-600 transition">Schedule a walkthrough</button>
+        <button type="submit" id="submitBtn" class="w-full py-4 bg-primary text-white rounded-full font-medium hover:bg-blue-600 transition">See available times</button>
         <p id="formMessage" class="text-sm text-center hidden"></p>
       </form>
+
+      <section id="availabilityCard" class="hidden mt-5 bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-border" aria-live="polite">
+        <div class="mb-5">
+          <div class="text-xs font-bold tracking-wider text-primary mb-2">AVAILABLE TIMES</div>
+          <h2 class="font-display text-2xl">Choose your walkthrough time</h2>
+          <p id="slotSubtitle" class="text-sm text-muted mt-1"></p>
+        </div>
+        <div id="slots" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+        <p id="slotMessage" class="text-sm text-muted mt-4"></p>
+        <button id="confirmBookingBtn" disabled class="mt-5 w-full py-4 bg-dark text-white rounded-full font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-black transition">Confirm walkthrough</button>
+      </section>
+
+      <section id="confirmedCard" class="hidden mt-5 bg-white p-7 rounded-2xl shadow-lg border border-border text-center" aria-live="polite">
+        <div class="w-12 h-12 mx-auto rounded-full bg-blue-50 text-primary flex items-center justify-center text-xl mb-4">✓</div>
+        <div class="text-xs font-bold tracking-wider text-primary mb-2">CONFIRMED</div>
+        <h2 class="font-display text-2xl">Your walkthrough is booked.</h2>
+        <p id="confirmedText" class="text-muted mt-2"></p>
+        <p class="text-sm text-muted mt-3">We also sent a confirmation to your email.</p>
+      </section>
     </div>
   </main>
 
-  <footer class="border-t border-border py-8 px-5">
-    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted">
-      <a href="/" class="flex items-center"><img src="/logo.svg" alt="Zero Trace Solutions" class="h-6 w-auto" /></a>
-      <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center">
-        <span>©2026 Zero Trace Solutions</span>
-        <span class="hidden sm:inline text-border">|</span>
-        <a href="/privacy.html" class="hover:text-primary">Privacy</a>
-        <a href="/terms.html" class="hover:text-primary">Terms</a>
-      </div>
-      <a href="mailto:support@zerotraceusa.com" class="hover:text-primary">support@zerotraceusa.com</a>
-    </div>
-  </footer>
+  <footer class="border-t border-border py-8 px-5"><div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted"><a href="/" class="flex items-center"><img src="/logo.svg" alt="Zero Trace Solutions" class="h-6 w-auto" /></a><div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center"><span>©2026 Zero Trace Solutions</span><span class="hidden sm:inline text-border">|</span><a href="/privacy.html" class="hover:text-primary">Privacy</a><a href="/terms.html" class="hover:text-primary">Terms</a></div><a href="mailto:support@zerotraceusa.com" class="hover:text-primary">support@zerotraceusa.com</a></div></footer>
+
   <script>
-    const menuBtn = document.getElementById('menuBtn');
-    const mobileMenu = document.getElementById('mobileMenu');
-    const closeMenu = document.getElementById('closeMenu');
-    function openMenu() {
-      mobileMenu.classList.remove('hidden');
-      mobileMenu.classList.add('flex');
-      document.body.style.overflow = 'hidden';
-    }
-    function closeMenuFn() {
-      mobileMenu.classList.add('hidden');
-      mobileMenu.classList.remove('flex');
-      document.body.style.overflow = '';
-    }
-    menuBtn?.addEventListener('click', openMenu);
-    closeMenu?.addEventListener('click', closeMenuFn);
-    document.querySelectorAll('.menu-link').forEach(link => {
-      link.addEventListener('click', closeMenuFn);
-    });
+    const menuBtn=document.getElementById('menuBtn'),mobileMenu=document.getElementById('mobileMenu'),closeMenu=document.getElementById('closeMenu');
+    function openMenu(){mobileMenu.classList.remove('hidden');mobileMenu.classList.add('flex');document.body.style.overflow='hidden'}
+    function closeMenuFn(){mobileMenu.classList.add('hidden');mobileMenu.classList.remove('flex');document.body.style.overflow=''}
+    menuBtn?.addEventListener('click',openMenu);closeMenu?.addEventListener('click',closeMenuFn);document.querySelectorAll('.menu-link').forEach(l=>l.addEventListener('click',closeMenuFn));
   </script>
 
   <script>
-    const form = document.getElementById('walkthroughForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const formMessage = document.getElementById('formMessage');
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending…';
-      formMessage.classList.add('hidden');
-      try {
-        const data = Object.fromEntries(new FormData(form).entries());
-        const res = await fetch('/api/leads', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        const payload = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(payload.error || 'Request failed');
-        form.reset();
-        formMessage.innerHTML = '<strong class="block text-base text-dark mb-1">We got your request.</strong><span class="text-muted">Thanks — we’ll follow up shortly to confirm coverage and timing for your walkthrough.</span>';
-        formMessage.className = 'text-sm text-center px-2';
-        formMessage.classList.remove('hidden');
-      } catch (err) {
-        formMessage.textContent = 'Something went wrong. Please try again or email support@zerotraceusa.com';
-        formMessage.className = 'text-sm text-center text-red-600';
-        formMessage.classList.remove('hidden');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Schedule a walkthrough';
-      }
+    const form=document.getElementById('walkthroughForm');
+    const submitBtn=document.getElementById('submitBtn');
+    const formMessage=document.getElementById('formMessage');
+    const availabilityCard=document.getElementById('availabilityCard');
+    const slotsEl=document.getElementById('slots');
+    const slotMessage=document.getElementById('slotMessage');
+    const slotSubtitle=document.getElementById('slotSubtitle');
+    const confirmBtn=document.getElementById('confirmBookingBtn');
+    const confirmedCard=document.getElementById('confirmedCard');
+    const confirmedText=document.getElementById('confirmedText');
+    let leadId=null,leadData=null,selectedSlot=null;
+
+    const dateInput=form.querySelector('[name="preferredDate"]');
+    const tomorrow=new Date(); tomorrow.setDate(tomorrow.getDate()+1); dateInput.min=tomorrow.toISOString().slice(0,10);
+
+    function message(text,error=false){formMessage.textContent=text;formMessage.className=`text-sm text-center ${error?'text-red-600':'text-muted'}`;formMessage.classList.remove('hidden')}
+    function prettyDate(date){
+      const [y,m,d]=date.split('-').map(Number);
+      return new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).format(new Date(y,m-1,d,12,0,0));
+    }
+
+    async function loadSlots(){
+      selectedSlot=null;confirmBtn.disabled=true;slotsEl.innerHTML='';slotMessage.textContent='Checking the live schedule…';availabilityCard.classList.remove('hidden');
+      const params=new URLSearchParams({date:leadData.preferredDate,window:leadData.preferredTime||'Flexible'});
+      const res=await fetch(`/api/availability?${params}`); const payload=await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(payload.error||'Could not load availability');
+      slotSubtitle.textContent=`${prettyDate(leadData.preferredDate)} · ${leadData.preferredTime||'Flexible'}`;
+      if(!payload.slots?.length){slotMessage.textContent='No open times match that date and time window. Change your preferred date/time above and submit again.';return}
+      slotMessage.textContent='These times are currently open. Your selection is re-checked before it is confirmed.';
+      payload.slots.forEach(slot=>{
+        const btn=document.createElement('button');btn.type='button';btn.className='slot-btn px-4 py-3 rounded-xl border border-border bg-white text-sm font-medium hover:border-primary transition';btn.textContent=slot.label;btn.setAttribute('aria-pressed','false');
+        btn.addEventListener('click',()=>{document.querySelectorAll('.slot-btn').forEach(b=>b.setAttribute('aria-pressed','false'));btn.setAttribute('aria-pressed','true');selectedSlot=slot;confirmBtn.disabled=false});
+        slotsEl.appendChild(btn);
+      });
+    }
+
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();submitBtn.disabled=true;submitBtn.textContent='Checking…';formMessage.classList.add('hidden');availabilityCard.classList.add('hidden');confirmedCard.classList.add('hidden');
+      try{
+        leadData=Object.fromEntries(new FormData(form).entries());
+        const res=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(leadData)});const payload=await res.json().catch(()=>({}));
+        if(!res.ok) throw new Error(payload.error||'Request failed');leadId=payload.id;message('Your details are saved. Choose an available time below.');await loadSlots();availabilityCard.scrollIntoView({behavior:'smooth',block:'center'});
+      }catch(err){message(err.message||'Something went wrong. Please try again.',true)}finally{submitBtn.disabled=false;submitBtn.textContent='See available times'}
+    });
+
+    confirmBtn.addEventListener('click',async()=>{
+      if(!leadId||!leadData||!selectedSlot)return;confirmBtn.disabled=true;confirmBtn.textContent='Confirming…';slotMessage.textContent='Re-checking that time…';
+      try{
+        const res=await fetch('/api/book',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...leadData,leadId,start:selectedSlot.start,end:selectedSlot.end})});const payload=await res.json().catch(()=>({}));
+        if(res.status===409){slotMessage.textContent=payload.error||'That time was just booked. Loading current availability…';await loadSlots();return}
+        if(!res.ok)throw new Error(payload.error||'Booking failed');
+        availabilityCard.classList.add('hidden');form.classList.add('hidden');confirmedCard.classList.remove('hidden');
+        confirmedText.textContent=`${prettyDate(leadData.preferredDate)} at ${selectedSlot.label} · ${leadData.location}`;confirmedCard.scrollIntoView({behavior:'smooth',block:'center'});
+      }catch(err){slotMessage.textContent=err.message||'Unable to confirm right now.';confirmBtn.disabled=false}finally{confirmBtn.textContent='Confirm walkthrough'}
     });
   </script>
-
 </body>
 </html>
