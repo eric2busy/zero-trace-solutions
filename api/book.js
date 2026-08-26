@@ -122,6 +122,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({ properties: {
         Status: { select: { name: 'Scheduled' } },
         'Preferred Date': { date: { start: start.slice(0, 10) } },
+        'Confirmed Time Slot': { date: { start: `${start}${offset}`, end: `${end}${offset}`, time_zone: TIMEZONE } },
         Notes: { rich_text: [{ text: { content: `${notes ? `${notes}\n\n` : ''}Confirmed walkthrough: ${start} ${TIMEZONE}`.slice(0, 1900) } }] },
       } }),
     });
