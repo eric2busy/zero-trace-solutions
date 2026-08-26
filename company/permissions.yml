@@ -1,0 +1,47 @@
+version: 0.1
+levels:
+  observe:
+    description: Read approved company and customer information.
+    approval: false
+  prepare:
+    description: Create drafts, recommendations, job briefs, responses, and candidate records.
+    approval: false
+  commit:
+    description: Change internal company state.
+    approval: policy_dependent
+  emit:
+    description: Send information or trigger an action outside the company boundary.
+    approval: policy_dependent
+
+autonomous:
+  - classify_new_lead
+  - create_internal_notes
+  - create_customer_record
+  - update_standard_crm_status
+  - answer_approved_faq
+  - send_submission_confirmation
+  - send_standard_appointment_reminder
+  - prepare_job_brief
+  - prepare_follow_up
+
+approval_required:
+  - custom_price
+  - discount
+  - refund
+  - commercial_proposal
+  - nonstandard_customer_commitment
+  - legal_or_contractual_commitment
+  - publish_marketing_campaign
+  - production_change_with_material_business_risk
+
+human_only:
+  - banking_authority
+  - change_company_pricing_policy
+  - change_ai_permissions
+  - delete_material_business_records
+  - disclose_or_rotate_secrets
+
+fail_closed:
+  - "If approval state cannot be verified, do not perform approval-required actions."
+  - "If approved knowledge does not support a customer-facing claim, escalate."
+  - "If calendar availability cannot be verified, do not promise a booking time."
