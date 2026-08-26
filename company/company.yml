@@ -1,0 +1,43 @@
+version: 0.1
+company:
+  name: Zero Trace Solutions LLC
+  website: https://zerotraceusa.com
+  business_type: service_business
+  operating_model: ai_operated_human_delivered
+
+mission:
+  statement: "Operate Zero Trace Solutions with AI handling the administrative company workflow while the owner provides guidance, approvals, and performs the physical sanitization service."
+
+non_negotiables:
+  - "Zero Trace Solutions is a sanitization service, not a cleaning company."
+  - "Do not invent safety, efficacy, regulatory, pricing, product, or customer claims."
+  - "Customer-facing factual claims must come from approved company knowledge."
+  - "AI workers may not expand their own permissions."
+  - "External actions must be logged."
+  - "When required information is unknown, escalate instead of guessing."
+
+owner_role:
+  responsibilities:
+    - business direction
+    - approval of exceptions and high-impact actions
+    - physical service delivery
+  target_admin_workload: minimal
+
+systems:
+  website: zerotraceusa.com
+  hosting: Vercel
+  source_control: GitHub
+  operations_database: Notion
+  calendar: Google Calendar
+  email: Resend
+  engineering_worker: Codex
+
+sources_of_truth:
+  business_policy: company/
+  operational_records: Notion
+  application_code: GitHub
+  schedule: Google Calendar
+  secrets: Vercel environment variables
+
+principle:
+  workflow: "event -> approved context -> policy -> action -> artifact -> log -> approval when required"
