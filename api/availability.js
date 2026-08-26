@@ -1,16 +1,6 @@
 /**
  * GET /api/availability?date=YYYY-MM-DD&window=Morning|Afternoon|Flexible
  * Returns open walkthrough slots after checking the real Google Calendar.
- *
- * Env:
- *   GOOGLE_CLIENT_EMAIL
- *   GOOGLE_PRIVATE_KEY
- *   GOOGLE_CALENDAR_ID
- *   BOOKING_TIMEZONE          default America/Los_Angeles
- *   BOOKING_DAY_START         default 09:00
- *   BOOKING_DAY_END           default 17:00
- *   WALKTHROUGH_MINUTES       default 60
- *   BOOKING_BUFFER_MINUTES    default 30
  */
 
 const { google } = require('googleapis');
@@ -44,36 +34,43 @@ function authClient() {
   const email = process.env.GOOGLE_CLIENT_EMAIL;
   const key = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
   if (!email || !key) throw new Error('Google Calendar credentials are not configured');
-  return new google.auth.JWT({
-    email,
-    key,
-    scopes: ['https://www.googleapis.com/auth/calendar'],
-  });
+  return new google.auth.JWT({ email, key, scopes: ['https://www.googleapis.com/auth/calendar'] });
 }
 
-function parts(hhmm) {
-  const [h, m] = String(hhmm).split(':').map(Number);
-  return { h, m };
+function timezoneOffset(date) {
+  const reference = new Date(`${date}T12:00:00Z`);
+  const part = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIMEZONE,
+    timeZoneName: 'longOffset',
+    hour: '2-digit',
+  }).formatToParts(reference).find((p) => p.type === 'timeZoneName');
+  const match = String(part?.value || '').match(/GMT([+-]\d{2}:\d{2})/);
+  if (!match) throw new Error(`Unable to resolve offset for ${TIMEZONE}`);
+  return match[1];
 }
 
 function localIso(date, hhmm) {
   return `${date}T${hhmm}:00`;
 }
 
-function addMinutes(isoLocal, minutes) {
-  const d = new Date(`${isoLocal}-07:00`);
-  d.setMinutes(d.getMinutes() + minutes);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}:00`;
+function localMs(local, offset) {
+  return new Date(`${local}${offset}`).getTime();
 }
 
-function overlaps(start, end, busyStart, busyEnd, bufferMinutes) {
-  const s = new Date(`${start}-07:00`).getTime();
-  const e = new Date(`${end}-07:00`).getTime();
+function addMinutes(local, minutes, offset) {
+  const d = new Date(localMs(local, offset) + minutes * 60000);
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIMEZONE,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  });
+  const parts = Object.fromEntries(formatter.formatToParts(d).filter((p) => p.type !== 'literal').map((p) => [p.type, p.value]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
+function overlaps(start, end, busyStart, busyEnd, bufferMinutes, offset) {
+  const s = localMs(start, offset);
+  const e = localMs(end, offset);
   const bs = new Date(busyStart).getTime() - bufferMinutes * 60000;
   const be = new Date(busyEnd).getTime() + bufferMinutes * 60000;
   return s < be && e > bs;
@@ -82,8 +79,7 @@ function overlaps(start, end, busyStart, busyEnd, bufferMinutes) {
 function slotLabel(localStart) {
   const [hh, mm] = localStart.slice(11, 16).split(':').map(Number);
   const suffix = hh >= 12 ? 'PM' : 'AM';
-  const hour = hh % 12 || 12;
-  return `${hour}:${String(mm).padStart(2, '0')} ${suffix}`;
+  return `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${suffix}`;
 }
 
 module.exports = async function handler(req, res) {
@@ -94,9 +90,11 @@ module.exports = async function handler(req, res) {
   const date = String(req.query?.date || '').trim();
   const windowName = String(req.query?.window || 'Flexible').trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json(res, 400, { error: 'Valid date is required' }, origin);
+  if (!['Morning', 'Afternoon', 'Flexible'].includes(windowName)) return json(res, 400, { error: 'Invalid time window' }, origin);
 
   const slotMinutes = Math.max(30, Number(process.env.WALKTHROUGH_MINUTES || 60));
   const bufferMinutes = Math.max(0, Number(process.env.BOOKING_BUFFER_MINUTES || 30));
+  const minimumNoticeMinutes = Math.max(0, Number(process.env.BOOKING_MIN_NOTICE_MINUTES || 120));
   const dayStart = process.env.BOOKING_DAY_START || '09:00';
   const dayEnd = process.env.BOOKING_DAY_END || '17:00';
 
@@ -106,35 +104,30 @@ module.exports = async function handler(req, res) {
   if (windowName === 'Afternoon') startClock = '13:00';
 
   try {
+    const offset = timezoneOffset(date);
     const calendar = google.calendar({ version: 'v3', auth: authClient() });
-    const timeMin = `${date}T00:00:00-07:00`;
-    const timeMax = `${date}T23:59:59-07:00`;
     const fb = await calendar.freebusy.query({
       requestBody: {
-        timeMin,
-        timeMax,
+        timeMin: `${date}T00:00:00${offset}`,
+        timeMax: `${date}T23:59:59${offset}`,
         timeZone: TIMEZONE,
         items: [{ id: CALENDAR_ID }],
       },
     });
     const busy = fb.data.calendars?.[CALENDAR_ID]?.busy || [];
+    const nowWithNotice = Date.now() + minimumNoticeMinutes * 60000;
 
     const slots = [];
     let cursor = localIso(date, startClock);
     const closing = localIso(date, endClock);
-    while (new Date(`${cursor}-07:00`) < new Date(`${closing}-07:00`)) {
-      const end = addMinutes(cursor, slotMinutes);
-      if (new Date(`${end}-07:00`) > new Date(`${closing}-07:00`)) break;
-      const blocked = busy.some((b) => overlaps(cursor, end, b.start, b.end, bufferMinutes));
-      if (!blocked) {
-        slots.push({
-          start: cursor,
-          end,
-          label: slotLabel(cursor),
-          timeZone: TIMEZONE,
-        });
+    while (localMs(cursor, offset) < localMs(closing, offset)) {
+      const end = addMinutes(cursor, slotMinutes, offset);
+      if (localMs(end, offset) > localMs(closing, offset)) break;
+      const blocked = busy.some((b) => overlaps(cursor, end, b.start, b.end, bufferMinutes, offset));
+      if (!blocked && localMs(cursor, offset) >= nowWithNotice) {
+        slots.push({ start: cursor, end, label: slotLabel(cursor), timeZone: TIMEZONE });
       }
-      cursor = addMinutes(cursor, slotMinutes);
+      cursor = addMinutes(cursor, slotMinutes, offset);
     }
 
     return json(res, 200, { ok: true, date, window: windowName, slots }, origin);
