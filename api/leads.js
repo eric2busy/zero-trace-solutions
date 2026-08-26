@@ -1,282 +1,85 @@
 /**
  * POST /api/leads
- * Creates a Notion row + Google Calendar event for walkthrough requests.
- *
- * Env (Vercel):
- *   NOTION_TOKEN
- *   NOTION_DATABASE_ID
- *   GOOGLE_CLIENT_EMAIL      – service account email
- *   GOOGLE_PRIVATE_KEY       – service account private key (PEM, \n escaped)
- *   GOOGLE_CALENDAR_ID       – calendar id
- *   RESEND_API_KEY           – Resend API key (lead alert + client confirmation)
- *   LEAD_ALERT_TO            – your inbox (e.g. zerotraceusa@protonmail.com)
- *   LEAD_ALERT_FROM          – verified domain sender (default solutions@zerotraceusa.com)
+ * Creates a Notion walkthrough lead and sends request acknowledgements.
+ * IMPORTANT: this endpoint does NOT create a Calendar event. Calendar state is
+ * created only by /api/book after a real availability check and customer slot selection.
  */
-
-const { google } = require('googleapis');
 
 const DATABASE_ID = process.env.NOTION_DATABASE_ID || '896228ea48af4523a8cb0f099ca800c2';
 const NOTION_VERSION = '2022-06-28';
 
 function corsHeaders(origin) {
-  const allowed = [
-    'https://zerotraceusa.com',
-    'https://www.zerotraceusa.com',
-    'https://zero-trace-solutions.vercel.app',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-  ];
+  const allowed = ['https://zerotraceusa.com','https://www.zerotraceusa.com','https://zero-trace-solutions.vercel.app','http://localhost:3000','http://127.0.0.1:3000'];
   const allow = allowed.includes(origin) ? origin : allowed[0];
-  return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  };
+  return { 'Access-Control-Allow-Origin': allow, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 }
 
 function json(res, status, body, origin) {
   res.statusCode = status;
-  const headers = {
-    'Content-Type': 'application/json',
-    ...corsHeaders(origin),
-  };
-  Object.entries(headers).forEach(([k, v]) => res.setHeader(k, v));
+  Object.entries({ 'Content-Type': 'application/json', ...corsHeaders(origin) }).forEach(([k, v]) => res.setHeader(k, v));
   res.end(JSON.stringify(body));
 }
 
-function sanitize(str, max = 500) {
-  if (typeof str !== 'string') return '';
-  return str.trim().slice(0, max);
-}
-
-/** Map preferred time → America/Los_Angeles window on preferredDate */
-function eventTimes(preferredDate, preferredTime) {
-  // All-day if no date
-  if (!preferredDate || !/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) {
-    return null;
-  }
-
-  const time = (preferredTime || '').toLowerCase();
-  // Windows in local PT (form is SoCal business)
-  let startHour = 9;
-  let endHour = 12;
-  if (time === 'afternoon') {
-    startHour = 13;
-    endHour = 17;
-  } else if (time === 'flexible' || !time) {
-    // All-day event
-    return {
-      start: { date: preferredDate },
-      end: { date: preferredDate },
-    };
-  }
-  // Morning default 9–12
-
-  const pad = (n) => String(n).padStart(2, '0');
-  const start = `${preferredDate}T${pad(startHour)}:00:00`;
-  const end = `${preferredDate}T${pad(endHour)}:00:00`;
-  return {
-    start: { dateTime: start, timeZone: 'America/Los_Angeles' },
-    end: { dateTime: end, timeZone: 'America/Los_Angeles' },
-  };
-}
-
-async function createCalendarEvent(fields) {
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  const privateKey = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
-  const calendarId = process.env.GOOGLE_CALENDAR_ID || 'schedule.zts@gmail.com';
-
-  if (!clientEmail || !privateKey) {
-    console.warn('Google Calendar env not set — skipping calendar event');
-    return null;
-  }
-
-  const times = eventTimes(fields.preferredDate, fields.preferredTime);
-  if (!times) {
-    console.warn('No preferred date — skipping calendar event');
-    return null;
-  }
-
-  const auth = new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey,
-    scopes: ['https://www.googleapis.com/auth/calendar'],
-  });
-
-  const calendar = google.calendar({ version: 'v3', auth });
-
-  const title = `Walkthrough – ${fields.name}${
-    fields.businessType ? ` (${fields.businessType})` : ''
-  }`;
-
-  const description = [
-    `Lead from zerotraceusa.com`,
-    `Name: ${fields.name}`,
-    fields.phone ? `Phone: ${fields.phone}` : null,
-    fields.email ? `Email: ${fields.email}` : null,
-    fields.businessType ? `Business type: ${fields.businessType}` : null,
-    fields.preferredTime ? `Preferred time: ${fields.preferredTime}` : null,
-    fields.location ? `Location: ${fields.location}` : null,
-    fields.notes ? `Notes: ${fields.notes}` : null,
-    ``,
-    `Status: New — confirm in Notion before treating as locked.`,
-  ]
-    .filter(Boolean)
-    .join('\n');
-
-  const event = {
-    summary: title,
-    description,
-    location: fields.location || undefined,
-    start: times.start,
-    end: times.end,
-    reminders: {
-      useDefault: false,
-      overrides: [
-        { method: 'email', minutes: 24 * 60 },
-        { method: 'popup', minutes: 60 },
-      ],
-    },
-  };
-
-  const result = await calendar.events.insert({
-    calendarId,
-    requestBody: event,
-  });
-
-  return result.data.id;
-}
-
-
-function resendFrom() {
-  return (
-    process.env.LEAD_ALERT_FROM ||
-    'Zero Trace Solutions <solutions@zerotraceusa.com>'
-  );
-}
+function sanitize(str, max = 500) { return typeof str === 'string' ? str.trim().slice(0, max) : ''; }
+function resendFrom() { return process.env.LEAD_ALERT_FROM || 'Zero Trace Solutions <solutions@zerotraceusa.com>'; }
 
 async function resendSend({ to, subject, text, replyTo }) {
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) {
-    console.warn('RESEND_API_KEY not set — skipping email');
-    return false;
-  }
-
-  const body = {
-    from: resendFrom(),
-    to: Array.isArray(to) ? to : [to],
-    subject,
-    text,
-  };
+  const key = process.env.RESEND_API_KEY;
+  if (!key || !to) return false;
+  const body = { from: resendFrom(), to: Array.isArray(to) ? to : [to], subject, text };
   if (replyTo) body.reply_to = replyTo;
-
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${resendKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const errBody = await res.text();
-    console.error('Resend error', res.status, errBody);
-    return false;
-  }
-  return true;
+  const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!response.ok) console.error('Resend error', response.status, await response.text());
+  return response.ok;
 }
 
-/** Internal alert to your inbox (Proton, etc.) */
 async function sendLeadAlert(fields) {
-  const to = process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com';
-  const subject = `New walkthrough request — ${fields.name}`;
-  const text = [
-    'New walkthrough request from zerotraceusa.com',
-    '',
-    `Name: ${fields.name}`,
-    `Phone: ${fields.phone}`,
-    `Email: ${fields.email}`,
-    `Business type: ${fields.businessType || '—'}`,
-    `Preferred date: ${fields.preferredDate || '—'}`,
-    `Preferred time: ${fields.preferredTime || '—'}`,
-    `Location: ${fields.location}`,
-    fields.notes ? `Notes: ${fields.notes}` : null,
-    '',
-    'Saved to Notion. Check Google Calendar if a preferred date was provided.',
-  ]
-    .filter((line) => line !== null)
-    .join('\n');
-
   return resendSend({
-    to,
-    subject,
-    text,
+    to: process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com',
+    subject: `New walkthrough request — ${fields.name}`,
+    text: [
+      'New walkthrough request from zerotraceusa.com', '',
+      `Name: ${fields.name}`, `Phone: ${fields.phone}`, `Email: ${fields.email}`,
+      `Business type: ${fields.businessType || '—'}`, `Preferred date: ${fields.preferredDate || '—'}`,
+      `Preferred time: ${fields.preferredTime || '—'}`, `Location: ${fields.location}`,
+      fields.notes ? `Notes: ${fields.notes}` : null, '',
+      'Saved to Notion as New. No calendar event has been created until the customer selects a verified available slot.'
+    ].filter((x) => x !== null).join('\n'),
     replyTo: fields.email,
   });
 }
 
-/** Confirmation email to the person who submitted the form */
 async function sendClientConfirmation(fields) {
   if (!fields.email) return false;
-
-  const subject = 'We received your walkthrough request — Zero Trace Solutions';
-  const text = [
-    `Hi ${fields.name},`,
-    '',
-    'Thanks for reaching out to Zero Trace Solutions. We received your walkthrough request and will follow up shortly to confirm coverage and timing.',
-    '',
-    'Here is a copy of what you submitted:',
-    `• Location: ${fields.location}`,
-    fields.businessType ? `• Business type: ${fields.businessType}` : null,
-    fields.preferredDate ? `• Preferred date: ${fields.preferredDate}` : null,
-    fields.preferredTime ? `• Preferred time: ${fields.preferredTime}` : null,
-    '',
-    'If anything looks off or you need to update details, reply to this email or contact support@zerotraceusa.com.',
-    '',
-    '— Zero Trace Solutions',
-    'Inland Empire & San Bernardino Valley',
-    'https://zerotraceusa.com',
-  ]
-    .filter((line) => line !== null)
-    .join('\n');
-
   return resendSend({
     to: fields.email,
-    subject,
-    text,
+    subject: 'We received your walkthrough request — Zero Trace Solutions',
+    text: [
+      `Hi ${fields.name},`, '',
+      'Thanks for reaching out to Zero Trace Solutions. We received your walkthrough request.',
+      'Your appointment is not confirmed yet. Please choose from the available times shown on the website to lock in your walkthrough.', '',
+      `Location: ${fields.location}`,
+      fields.businessType ? `Business type: ${fields.businessType}` : null,
+      fields.preferredDate ? `Preferred date: ${fields.preferredDate}` : null,
+      fields.preferredTime ? `Preferred time: ${fields.preferredTime}` : null,
+      '', 'If you need help, reply to this email or contact support@zerotraceusa.com.', '',
+      '— Zero Trace Solutions', 'https://zerotraceusa.com'
+    ].filter((x) => x !== null).join('\n'),
     replyTo: process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com',
   });
 }
 
 module.exports = async function handler(req, res) {
   const origin = req.headers.origin || '';
-
-  if (req.method === 'OPTIONS') {
-    return json(res, 204, {}, origin);
-  }
-
-  if (req.method !== 'POST') {
-    return json(res, 405, { error: 'Method not allowed' }, origin);
-  }
+  if (req.method === 'OPTIONS') return json(res, 204, {}, origin);
+  if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' }, origin);
 
   const token = process.env.NOTION_TOKEN;
-  if (!token) {
-    console.error('NOTION_TOKEN is not set');
-    return json(res, 500, { error: 'Server misconfigured' }, origin);
-  }
+  if (!token) return json(res, 500, { error: 'Server misconfigured' }, origin);
 
   let body = req.body;
-  if (typeof body === 'string') {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      return json(res, 400, { error: 'Invalid JSON' }, origin);
-    }
-  }
-  if (!body || typeof body !== 'object') {
-    return json(res, 400, { error: 'Missing body' }, origin);
-  }
+  if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return json(res, 400, { error: 'Invalid JSON' }, origin); } }
+  if (!body || typeof body !== 'object') return json(res, 400, { error: 'Missing body' }, origin);
 
   const name = sanitize(body.name, 120);
   const phone = sanitize(body.phone, 40);
@@ -287,135 +90,42 @@ module.exports = async function handler(req, res) {
   const location = sanitize(body.location, 200);
   const notes = sanitize(body.notes, 1000);
 
-  if (!name || !phone || !email || !location) {
-    return json(res, 400, { error: 'Name, phone, email, and location are required' }, origin);
-  }
+  if (!name || !phone || !email || !location) return json(res, 400, { error: 'Name, phone, email, and location are required' }, origin);
 
   const allowedBusiness = ['Office', 'Classroom', 'Commercial', 'Other'];
   const allowedTime = ['Morning', 'Afternoon', 'Flexible'];
-
   const properties = {
-    Name: {
-      title: [{ text: { content: name } }],
-    },
-    Phone: {
-      phone_number: phone,
-    },
-    Email: {
-      email: email,
-    },
-    'Business Type': {
-      select: {
-        name: allowedBusiness.includes(businessType) ? businessType : 'Other',
-      },
-    },
-    Location: {
-      rich_text: [{ text: { content: location } }],
-    },
-    Status: {
-      select: { name: 'New' },
-    },
-    Source: {
-      select: { name: 'Website Form' },
-    },
+    Name: { title: [{ text: { content: name } }] },
+    Phone: { phone_number: phone },
+    Email: { email },
+    'Business Type': { select: { name: allowedBusiness.includes(businessType) ? businessType : 'Other' } },
+    Location: { rich_text: [{ text: { content: location } }] },
+    Status: { select: { name: 'New' } },
+    Source: { select: { name: 'Website Form' } },
   };
-
-  if (preferredTime && allowedTime.includes(preferredTime)) {
-    properties['Preferred Time'] = { select: { name: preferredTime } };
-  }
-
-  if (preferredDate && /^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) {
-    properties['Preferred Date'] = {
-      date: { start: preferredDate },
-    };
-  }
-
-  if (notes) {
-    properties.Notes = {
-      rich_text: [{ text: { content: notes } }],
-    };
-  }
+  if (preferredTime && allowedTime.includes(preferredTime)) properties['Preferred Time'] = { select: { name: preferredTime } };
+  if (preferredDate && /^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) properties['Preferred Date'] = { date: { start: preferredDate } };
+  if (notes) properties.Notes = { rich_text: [{ text: { content: notes } }] };
 
   try {
     const notionRes = await fetch('https://api.notion.com/v1/pages', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Notion-Version': NOTION_VERSION,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        parent: { database_id: DATABASE_ID },
-        properties,
-      }),
+      headers: { Authorization: `Bearer ${token}`, 'Notion-Version': NOTION_VERSION, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parent: { database_id: DATABASE_ID }, properties }),
     });
-
     const data = await notionRes.json();
-
     if (!notionRes.ok) {
       console.error('Notion API error', notionRes.status, JSON.stringify(data));
-      return json(
-        res,
-        502,
-        { error: 'Failed to save lead. Please try again or email support@zerotraceusa.com' },
-        origin
-      );
+      return json(res, 502, { error: 'Failed to save lead. Please try again or email support@zerotraceusa.com' }, origin);
     }
 
-    // Calendar is best-effort: lead is already saved if this fails
-    let calendarEventId = null;
-    try {
-      calendarEventId = await createCalendarEvent({
-        name,
-        phone,
-        email,
-        businessType,
-        preferredDate,
-        preferredTime,
-        location,
-        notes,
-      });
-    } catch (calErr) {
-      console.error('Google Calendar error', calErr?.message || calErr);
-    }
-
-    const mailFields = {
-      name,
-      phone,
-      email,
-      businessType,
-      preferredDate,
-      preferredTime,
-      location,
-      notes,
-    };
-
+    const fields = { name, phone, email, businessType, preferredDate, preferredTime, location, notes };
     let emailSent = false;
-    try {
-      emailSent = await sendLeadAlert(mailFields);
-    } catch (mailErr) {
-      console.error('Lead alert email error', mailErr?.message || mailErr);
-    }
-
     let clientEmailSent = false;
-    try {
-      clientEmailSent = await sendClientConfirmation(mailFields);
-    } catch (clientMailErr) {
-      console.error('Client confirmation email error', clientMailErr?.message || clientMailErr);
-    }
+    try { emailSent = await sendLeadAlert(fields); } catch (err) { console.error('Lead alert email error', err?.message || err); }
+    try { clientEmailSent = await sendClientConfirmation(fields); } catch (err) { console.error('Client confirmation email error', err?.message || err); }
 
-    return json(
-      res,
-      200,
-      {
-        ok: true,
-        id: data.id,
-        calendarEventId: calendarEventId || undefined,
-        emailSent: emailSent || undefined,
-        clientEmailSent: clientEmailSent || undefined,
-      },
-      origin
-    );
+    return json(res, 200, { ok: true, id: data.id, emailSent: emailSent || undefined, clientEmailSent: clientEmailSent || undefined, next: 'select_available_slot' }, origin);
   } catch (err) {
     console.error('Lead submit error', err);
     return json(res, 500, { error: 'Server error' }, origin);
