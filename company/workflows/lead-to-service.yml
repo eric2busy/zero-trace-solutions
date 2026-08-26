@@ -1,0 +1,65 @@
+id: lead-to-service
+version: 0.1
+status: implementation
+objective: "A qualified customer can move from website inquiry to confirmed walkthrough/service workflow with minimal owner administration."
+
+trigger:
+  event: website_lead_submitted
+  current_endpoint: /api/leads
+
+steps:
+  - id: intake
+    action: validate_and_normalize_lead
+    authority: prepare
+    artifact: lead_record
+  - id: persist
+    action: create_or_update_notion_lead
+    authority: commit
+    artifact: notion_record
+  - id: qualify
+    action: classify_fit_and_missing_information
+    authority: prepare
+    artifact: qualification_record
+  - id: acknowledge
+    action: send_approved_customer_confirmation
+    authority: emit
+    artifact: communication_record
+  - id: availability
+    action: check_real_calendar_availability
+    authority: observe
+    artifact: availability_record
+  - id: booking
+    action: create_calendar_booking_only_after_customer_selects_verified_slot
+    authority: commit
+    artifact: booking_record
+  - id: confirm
+    action: send_booking_confirmation
+    authority: emit
+    artifact: communication_record
+  - id: prepare_job
+    action: generate_owner_field_brief
+    authority: prepare
+    artifact: job_brief
+  - id: remind
+    action: send_standard_reminders
+    authority: emit
+    artifact: communication_record
+  - id: post_service
+    action: convert_owner_completion_input_into_records_and_follow_up
+    authority: prepare
+    artifact: service_completion_record
+
+current_gap:
+  - "Current lead endpoint creates a calendar event from a preferred window; that is not the same as verified slot booking."
+  - "AI qualification runtime is not implemented yet."
+  - "Customer reply/conversation ingestion is not implemented yet."
+  - "Approval queue is not implemented yet."
+  - "Post-service workflow is not implemented yet."
+
+success_criteria:
+  - no_double_booking
+  - no_unverified_time_promises
+  - every_external_action_logged
+  - customer_receives_confirmation
+  - owner_receives_concise_job_brief
+  - exceptions_escalate_instead_of_guessing
