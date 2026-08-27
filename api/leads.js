@@ -7,6 +7,7 @@
 
 const DATABASE_ID = process.env.NOTION_DATABASE_ID || '896228ea48af4523a8cb0f099ca800c2';
 const NOTION_VERSION = '2022-06-28';
+const { sendTransactionalEmail } = require('./_email');
 
 function corsHeaders(origin) {
   const allowed = ['https://zerotraceusa.com','https://www.zerotraceusa.com','https://zero-trace-solutions.vercel.app','http://localhost:3000','http://127.0.0.1:3000'];
@@ -21,20 +22,8 @@ function json(res, status, body, origin) {
 }
 
 function sanitize(str, max = 500) { return typeof str === 'string' ? str.trim().slice(0, max) : ''; }
-function resendFrom() { return process.env.LEAD_ALERT_FROM || 'Zero Trace Solutions <solutions@zerotraceusa.com>'; }
-
-async function resendSend({ to, subject, text, replyTo }) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key || !to) return false;
-  const body = { from: resendFrom(), to: Array.isArray(to) ? to : [to], subject, text };
-  if (replyTo) body.reply_to = replyTo;
-  const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!response.ok) console.error('Resend error', response.status, await response.text());
-  return response.ok;
-}
-
 async function sendLeadAlert(fields) {
-  return resendSend({
+  return sendTransactionalEmail({
     to: process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com',
     subject: `New walkthrough request — ${fields.name}`,
     text: [
@@ -46,12 +35,14 @@ async function sendLeadAlert(fields) {
       'Saved to Notion as New. No calendar event has been created until the customer selects a verified available slot.'
     ].filter((x) => x !== null).join('\n'),
     replyTo: fields.email,
+    endpoint: '/api/leads',
+    messageType: 'lead_alert',
+    recipientKind: 'internal',
   });
 }
 
 async function sendClientConfirmation(fields) {
-  if (!fields.email) return false;
-  return resendSend({
+  return sendTransactionalEmail({
     to: fields.email,
     subject: 'We received your walkthrough request — Zero Trace Solutions',
     text: [
@@ -66,6 +57,9 @@ async function sendClientConfirmation(fields) {
       '— Zero Trace Solutions', 'https://zerotraceusa.com'
     ].filter((x) => x !== null).join('\n'),
     replyTo: process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com',
+    endpoint: '/api/leads',
+    messageType: 'lead_acknowledgement',
+    recipientKind: 'customer',
   });
 }
 
@@ -120,12 +114,19 @@ module.exports = async function handler(req, res) {
     }
 
     const fields = { name, phone, email, businessType, preferredDate, preferredTime, location, notes };
-    let emailSent = false;
-    let clientEmailSent = false;
-    try { emailSent = await sendLeadAlert(fields); } catch (err) { console.error('Lead alert email error', err?.message || err); }
-    try { clientEmailSent = await sendClientConfirmation(fields); } catch (err) { console.error('Client confirmation email error', err?.message || err); }
+    const emailDelivery = {
+      internal: await sendLeadAlert(fields),
+      customer: await sendClientConfirmation(fields),
+    };
 
-    return json(res, 200, { ok: true, id: data.id, emailSent: emailSent || undefined, clientEmailSent: clientEmailSent || undefined, next: 'select_available_slot' }, origin);
+    return json(res, 200, {
+      ok: true,
+      id: data.id,
+      emailSent: emailDelivery.internal.sent,
+      clientEmailSent: emailDelivery.customer.sent,
+      emailDelivery,
+      next: 'select_available_slot',
+    }, origin);
   } catch (err) {
     console.error('Lead submit error', err);
     return json(res, 500, { error: 'Server error' }, origin);

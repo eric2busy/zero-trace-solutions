@@ -5,6 +5,7 @@
  */
 
 const { google } = require('googleapis');
+const { sendTransactionalEmail } = require('./_email');
 
 const NOTION_VERSION = '2022-06-28';
 const TIMEZONE = process.env.BOOKING_TIMEZONE || 'America/Los_Angeles';
@@ -38,22 +39,6 @@ function timezoneOffset(date) {
   const match = String(part?.value || '').match(/GMT([+-]\d{2}:\d{2})/);
   if (!match) throw new Error(`Unable to resolve offset for ${TIMEZONE}`);
   return match[1];
-}
-
-function resendFrom() { return process.env.LEAD_ALERT_FROM || 'Zero Trace Solutions <solutions@zerotraceusa.com>'; }
-
-async function sendEmail({ to, subject, text, replyTo }) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key || !to) return false;
-  const body = { from: resendFrom(), to: [to], subject, text };
-  if (replyTo) body.reply_to = replyTo;
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) console.error('Resend booking email error', response.status, await response.text());
-  return response.ok;
 }
 
 async function slotIsFree(calendar, start, end, offset) {
@@ -135,10 +120,28 @@ module.exports = async function handler(req, res) {
 
     const pretty = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(`${start}${offset}`));
 
-    await sendEmail({ to: email, subject: 'Your walkthrough is confirmed — Zero Trace Solutions', text: [`Hi ${name},`, '', `Your Zero Trace Solutions walkthrough is confirmed for ${pretty}.`, `Location: ${location}`, '', 'If you need to make a change, reply to this email or contact support@zerotraceusa.com.', '', '— Zero Trace Solutions', 'https://zerotraceusa.com'].join('\n'), replyTo: process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com' });
-    await sendEmail({ to: process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com', subject: `Walkthrough booked — ${name}`, text: [`Confirmed: ${pretty}`, `Name: ${name}`, `Location: ${location}`, `Email: ${email}`, phone ? `Phone: ${phone}` : null].filter(Boolean).join('\n'), replyTo: email });
+    const emailDelivery = {
+      customer: await sendTransactionalEmail({
+        to: email,
+        subject: 'Your walkthrough is confirmed — Zero Trace Solutions',
+        text: [`Hi ${name},`, '', `Your Zero Trace Solutions walkthrough is confirmed for ${pretty}.`, `Location: ${location}`, '', 'If you need to make a change, reply to this email or contact support@zerotraceusa.com.', '', '— Zero Trace Solutions', 'https://zerotraceusa.com'].join('\n'),
+        replyTo: process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com',
+        endpoint: '/api/book',
+        messageType: 'booking_confirmation',
+        recipientKind: 'customer',
+      }),
+      internal: await sendTransactionalEmail({
+        to: process.env.LEAD_ALERT_TO || 'support@zerotraceusa.com',
+        subject: `Walkthrough booked — ${name}`,
+        text: [`Confirmed: ${pretty}`, `Name: ${name}`, `Location: ${location}`, `Email: ${email}`, phone ? `Phone: ${phone}` : null].filter(Boolean).join('\n'),
+        replyTo: email,
+        endpoint: '/api/book',
+        messageType: 'booking_alert',
+        recipientKind: 'internal',
+      }),
+    };
 
-    return json(res, 200, { ok: true, calendarEventId: event.data.id, start, end }, origin);
+    return json(res, 200, { ok: true, calendarEventId: event.data.id, start, end, emailDelivery }, origin);
   } catch (err) {
     console.error('Booking error', err?.message || err);
     return json(res, 500, { error: 'Unable to complete booking right now' }, origin);

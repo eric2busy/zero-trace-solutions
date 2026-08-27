@@ -1,6 +1,9 @@
 {
   "name": "zero-trace-solutions",
   "private": true,
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
     "googleapis": "^144.0.0"
   }
