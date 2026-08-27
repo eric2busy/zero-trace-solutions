@@ -204,6 +204,37 @@ test('upstream logging records safe provider details without credentials', async
   assert.doesNotMatch(JSON.stringify(logs[0]), /sk-test-secret/);
 });
 
+test('insufficient quota fails closed with a safe retry path', async (t) => {
+  const originalFetch = global.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalLog = console.info;
+  const logs = [];
+  t.after(() => {
+    global.fetch = originalFetch;
+    console.info = originalLog;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+  });
+  process.env.OPENAI_API_KEY = 'test-key';
+  console.info = (value) => logs.push(JSON.parse(value));
+  global.fetch = async () => providerFailure({
+    status: 429,
+    type: 'insufficient_quota',
+    code: 'insufficient_quota',
+    message: 'You exceeded your current quota.',
+  });
+
+  const req = { method: 'POST', headers: {}, body: { messages: [{ role: 'user', text: 'How does pricing work?' }] } };
+  const res = mockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 502);
+  assert.equal(res.body.escalation.required, true);
+  assert.match(res.body.error, /try again|email/i);
+  assert.equal(logs[0].providerStatus, 429);
+  assert.equal(logs[0].providerErrorCode, 'insufficient_quota');
+});
+
 test('prompt injection is refused without exposing policy details', async () => {
   const result = await createConciergeResponse({
     apiKey: 'test-key',
