@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#eaf5ff" />
   <title>Zero Trace Solutions — Thorough sanitizing that leaves nothing behind but peace of mind</title>
   <meta name="description" content="Zero Trace Solutions — hospital-grade sanitizing for offices, classrooms, and commercial spaces." />
   <link rel="icon" href="/logo.svg" type="image/svg+xml" />
@@ -72,7 +73,14 @@
       font-weight: 400;
       letter-spacing: -0.02em;
     }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; background-color: #eaf5ff; }
+    body { background-color: #ffffff; }
+    .site-header {
+      padding-top: calc(1rem + env(safe-area-inset-top));
+      padding-left: max(1rem, env(safe-area-inset-left));
+      padding-right: max(1rem, env(safe-area-inset-right));
+    }
+    .hero-surface { padding-top: calc(7rem + env(safe-area-inset-top)); }
     /* Full-bleed soft gradients from the very top of the viewport */
     .soft-gradient-top {
       background:
@@ -87,16 +95,16 @@
         linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%);
     }
 </style>
+  <link rel="stylesheet" href="/assets/talk-to-zero-trace.css" />
 </head>
 <body class="bg-white text-dark antialiased">
-  <header class="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
+  <header class="site-header fixed top-0 left-0 right-0 z-50 px-4 pt-4">
     <div class="max-w-6xl mx-auto">
       <div class="flex items-center justify-between bg-white/80 backdrop-blur-md border border-border/50 rounded-full px-5 py-3 shadow-sm">
         <a href="/" class="flex items-center">
           <img src="/logo.svg" alt="Zero Trace Solutions" class="h-7 w-auto" />
         </a>
         <div class="flex items-center gap-3">
-          <a href="/concierge.html" class="hidden sm:inline-flex items-center px-4 py-2 text-primary text-sm rounded-full hover:bg-blue-50 transition">Ask AI</a>
           <a href="/book.html" class="hidden sm:inline-flex items-center px-4 py-2 bg-dark text-white text-sm rounded-full hover:bg-black transition">Schedule</a>
           <button id="menuBtn" class="w-8 h-8 flex items-center justify-center" aria-label="Menu">
             <svg width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M1 1h18M1 7h18M1 13h18" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg>
@@ -111,7 +119,6 @@
     <a href="/" class="menu-link font-display text-dark hover:text-primary transition">Home</a>
     <a href="/about.html" class="menu-link font-display text-dark hover:text-primary transition">About</a>
     <a href="/faq.html" class="menu-link font-display text-dark hover:text-primary transition">FAQ</a>
-    <a href="/concierge.html" class="menu-link font-display text-primary hover:text-blue-600 transition">AI Concierge</a>
     <a href="/contact.html" class="menu-link font-display text-dark hover:text-primary transition">Contact</a>
     <a href="/book.html" class="menu-link px-6 py-3 bg-primary text-white rounded-full mt-2">Schedule a walkthrough</a>
     <button id="closeMenu" class="absolute top-6 right-6 w-10 h-10 flex items-center justify-center text-3xl text-dark" aria-label="Close">&times;</button>
@@ -119,7 +126,7 @@
 
   <main>
     <!-- Gradient starts at top of viewport; content padded for fixed header -->
-    <section class="soft-gradient-top relative pt-28 pb-12 px-5 min-h-[70vh]">
+    <section class="hero-surface soft-gradient-top relative pt-28 pb-12 px-5 min-h-[70vh]">
       <div class="max-w-6xl mx-auto">
         <div class="flex flex-col items-start gap-6 md:gap-8">
           <div class="inline-flex items-center gap-2 bg-white/80 border border-border rounded-full px-4 py-1.5 text-xs text-dark">
@@ -137,7 +144,6 @@
               Schedule a walkthrough
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             </a>
-            <a href="/concierge.html" class="inline-flex items-center px-6 py-3.5 bg-white/80 text-primary rounded-full text-sm font-medium shadow-sm border border-primary/20 hover:bg-white transition">Ask the AI concierge</a>
             <a href="#how" class="inline-flex items-center px-6 py-3.5 bg-white/80 text-dark rounded-full text-sm font-medium shadow-sm border border-border/50 hover:bg-white transition">How it works</a>
           </div>
         </div>
@@ -308,5 +314,6 @@
     });
   </script>
 
+  <script src="/assets/talk-to-zero-trace.js" defer></script>
 </body>
 </html>

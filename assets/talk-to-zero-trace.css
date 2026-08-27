@@ -1,0 +1,208 @@
+:root {
+  --zt-blue: #0083f5;
+  --zt-ink: #262626;
+  --zt-muted: #6c6c6c;
+  --zt-line: #dfe6ec;
+  --zt-soft: #f4f8fb;
+}
+
+body.zt-talk-locked { overflow: hidden; }
+
+.zt-talk-launcher {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 17px 6px 7px;
+  border: 1px solid rgba(255, 255, 255, .66);
+  border-radius: 999px;
+  background: rgba(38, 38, 38, .96);
+  color: #fff;
+  box-shadow: 0 12px 34px rgba(25, 42, 62, .2), 0 2px 8px rgba(25, 42, 62, .12);
+  font: 600 13px/1.1 Inter, system-ui, sans-serif;
+  letter-spacing: -.01em;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease, opacity .18s ease;
+}
+
+.zt-talk-launcher:hover { transform: translateY(-2px); background: #111; box-shadow: 0 16px 42px rgba(25, 42, 62, .25); }
+.zt-talk-launcher:focus-visible { outline: 3px solid rgba(0, 131, 245, .34); outline-offset: 3px; }
+.zt-talk-launcher[aria-expanded="true"] { opacity: 0; pointer-events: none; transform: translateY(8px); }
+#mobileMenu:not(.hidden) ~ #zt-talk-root .zt-talk-launcher { opacity: 0; pointer-events: none; }
+
+.zt-talk-launcher-mark {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--zt-blue);
+  color: #fff;
+  font-size: 11px;
+  letter-spacing: -.04em;
+}
+
+.zt-talk-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+  background: rgba(26, 35, 45, .18);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s ease;
+}
+
+.zt-talk-backdrop[data-open="true"] { opacity: 1; pointer-events: auto; }
+
+.zt-talk-panel {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 80;
+  width: min(430px, calc(100vw - 40px));
+  height: min(700px, calc(100vh - 40px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .88);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 34px 90px rgba(25, 42, 62, .25), 0 10px 30px rgba(25, 42, 62, .12);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(18px) scale(.98);
+  transform-origin: 90% 100%;
+  transition: opacity .2s ease, transform .24s cubic-bezier(.2,.8,.2,1);
+}
+
+.zt-talk-panel[data-open="true"] { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+
+.zt-talk-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 72px;
+  padding: 14px 16px 14px 18px;
+  border-bottom: 1px solid rgba(211, 211, 211, .58);
+  background: rgba(255, 255, 255, .9);
+}
+
+.zt-talk-brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.zt-talk-brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 12px; background: var(--zt-ink); color: #fff; font: 700 11px/1 Inter, system-ui, sans-serif; }
+.zt-talk-brand-title { margin: 0; color: var(--zt-ink); font: 600 14px/1.15 Inter, system-ui, sans-serif; letter-spacing: -.015em; }
+.zt-talk-brand-status { display: flex; align-items: center; gap: 6px; margin: 4px 0 0; color: var(--zt-muted); font: 500 11px/1.1 Inter, system-ui, sans-serif; }
+.zt-talk-brand-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--zt-blue); box-shadow: 0 0 0 3px rgba(0, 131, 245, .1); }
+.zt-talk-top-actions { display: flex; align-items: center; gap: 4px; }
+.zt-talk-reset, .zt-talk-close, .zt-talk-back, .zt-talk-inline-action { appearance: none; border: 0; background: transparent; cursor: pointer; }
+.zt-talk-reset { padding: 8px 9px; border-radius: 999px; color: var(--zt-muted); font: 600 11px/1 Inter, system-ui, sans-serif; }
+.zt-talk-reset:hover { background: var(--zt-soft); color: var(--zt-ink); }
+.zt-talk-close { position: relative; width: 38px; height: 38px; border-radius: 50%; background: #f1f4f6; }
+.zt-talk-close::before, .zt-talk-close::after { content: ""; position: absolute; top: 18px; left: 11px; width: 16px; height: 1.5px; border-radius: 2px; background: var(--zt-ink); transform: rotate(45deg); }
+.zt-talk-close::after { transform: rotate(-45deg); }
+.zt-talk-close:hover { background: #e8edf1; }
+.zt-talk-reset:focus-visible, .zt-talk-close:focus-visible, .zt-talk-back:focus-visible, .zt-talk-inline-action:focus-visible { outline: 3px solid rgba(0, 131, 245, .28); outline-offset: 2px; }
+
+.zt-talk-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 90% 55% at 5% 0%, rgba(0, 131, 245, .11), transparent 64%),
+    linear-gradient(180deg, #f8fbfe 0%, #fff 33%);
+}
+
+.zt-talk-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 22px 20px 18px; scrollbar-width: thin; scrollbar-color: #cad5df transparent; }
+.zt-talk-view[hidden] { display: none !important; }
+.zt-talk-eyebrow { margin: 0 0 8px; color: var(--zt-blue); font: 700 11px/1 Inter, system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.zt-talk-heading { margin: 0; max-width: 330px; color: var(--zt-ink); font: 400 34px/1.05 "Cal Sans", Inter, system-ui, sans-serif; letter-spacing: -.035em; }
+.zt-talk-intro { margin: 12px 0 20px; max-width: 355px; color: var(--zt-muted); font: 400 14px/1.55 Inter, system-ui, sans-serif; }
+
+.zt-talk-guides { display: grid; gap: 9px; }
+.zt-talk-guide {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 32px 1fr 20px;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 14px;
+  border: 1px solid rgba(211, 211, 211, .7);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .9);
+  color: var(--zt-ink);
+  text-align: left;
+  font: 600 13px/1.25 Inter, system-ui, sans-serif;
+  cursor: pointer;
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.zt-talk-guide:hover { transform: translateY(-1px); border-color: rgba(0, 131, 245, .45); box-shadow: 0 8px 18px rgba(35, 62, 89, .08); }
+.zt-talk-guide:focus-visible { outline: 3px solid rgba(0, 131, 245, .25); outline-offset: 2px; }
+.zt-talk-guide-number { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: #eef7ff; color: var(--zt-blue); font: 700 10px/1 Inter, system-ui, sans-serif; }
+.zt-talk-guide-arrow { color: var(--zt-blue); font-size: 18px; font-weight: 400; }
+
+.zt-talk-thread { display: flex; flex-direction: column; gap: 14px; }
+.zt-talk-message { max-width: 88%; padding: 12px 14px; color: var(--zt-ink); font: 400 13px/1.52 Inter, system-ui, sans-serif; white-space: pre-wrap; overflow-wrap: anywhere; }
+.zt-talk-message[data-role="user"] { align-self: flex-end; border-radius: 17px 5px 17px 17px; background: var(--zt-ink); color: #fff; }
+.zt-talk-message[data-role="service"] { align-self: flex-start; border: 1px solid var(--zt-line); border-radius: 5px 17px 17px 17px; background: #f5f8fa; }
+.zt-talk-pending { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; color: var(--zt-muted); font: 500 12px/1.2 Inter, system-ui, sans-serif; }
+.zt-talk-pending::before { content: ""; width: 8px; height: 8px; border: 2px solid #b8c8d7; border-top-color: var(--zt-blue); border-radius: 50%; animation: zt-talk-spin .8s linear infinite; }
+@keyframes zt-talk-spin { to { transform: rotate(360deg); } }
+
+.zt-talk-unavailable, .zt-talk-handoff { align-self: stretch; padding: 15px; border-radius: 17px; border: 1px solid #d9e6f1; background: #f3f8fc; }
+.zt-talk-unavailable h3, .zt-talk-handoff h3 { margin: 0; color: var(--zt-ink); font: 600 14px/1.2 Inter, system-ui, sans-serif; }
+.zt-talk-unavailable p, .zt-talk-handoff p { margin: 7px 0 0; color: var(--zt-muted); font: 400 12px/1.5 Inter, system-ui, sans-serif; }
+.zt-talk-unavailable-actions, .zt-talk-handoff-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.zt-talk-inline-action { min-height: 36px; padding: 9px 13px; border-radius: 999px; background: var(--zt-ink); color: #fff; font: 600 11px/1 Inter, system-ui, sans-serif; }
+.zt-talk-inline-action[data-style="quiet"] { border: 1px solid var(--zt-line); background: #fff; color: var(--zt-ink); }
+
+.zt-talk-composer { flex: 0 0 auto; padding: 12px 16px max(14px, env(safe-area-inset-bottom)); border-top: 1px solid rgba(211, 211, 211, .58); background: rgba(255, 255, 255, .96); }
+.zt-talk-form { display: flex; align-items: flex-end; gap: 8px; padding: 7px 7px 7px 14px; border: 1px solid transparent; border-radius: 19px; background: #f2f5f7; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
+.zt-talk-form:focus-within { border-color: rgba(0, 131, 245, .42); background: #fff; box-shadow: 0 0 0 3px rgba(0, 131, 245, .08); }
+.zt-talk-input { flex: 1; min-width: 0; max-height: 110px; resize: none; border: 0; outline: 0; background: transparent; color: var(--zt-ink); font: 400 13px/1.45 Inter, system-ui, sans-serif; }
+.zt-talk-input::placeholder { color: #89939d; }
+.zt-talk-send { flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 14px; background: var(--zt-blue); color: #fff; cursor: pointer; }
+.zt-talk-send::before { content: "↗"; font-size: 19px; line-height: 1; transform: rotate(-2deg); }
+.zt-talk-send:disabled { opacity: .42; cursor: wait; }
+.zt-talk-send:focus-visible { outline: 3px solid rgba(0, 131, 245, .3); outline-offset: 2px; }
+.zt-talk-privacy { margin: 7px 0 0; color: #828d97; text-align: center; font: 400 10px/1.35 Inter, system-ui, sans-serif; }
+
+.zt-talk-booking-head { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.zt-talk-back { width: 34px; height: 34px; border-radius: 50%; background: #edf2f5; color: var(--zt-ink); font-size: 18px; }
+.zt-talk-booking-title { margin: 0; color: var(--zt-ink); font: 400 26px/1.05 "Cal Sans", Inter, system-ui, sans-serif; letter-spacing: -.025em; }
+.zt-talk-booking-copy { margin: 7px 0 0; color: var(--zt-muted); font: 400 12px/1.45 Inter, system-ui, sans-serif; }
+.zt-talk-fields { display: grid; gap: 10px; }
+.zt-talk-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.zt-talk-field, .zt-talk-select, .zt-talk-textarea { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--zt-line); border-radius: 12px; background: #fff; color: var(--zt-ink); font: 400 12px/1.35 Inter, system-ui, sans-serif; outline: none; }
+.zt-talk-textarea { min-height: 72px; resize: vertical; }
+.zt-talk-field:focus, .zt-talk-select:focus, .zt-talk-textarea:focus { border-color: var(--zt-blue); box-shadow: 0 0 0 3px rgba(0, 131, 245, .09); }
+.zt-talk-primary { width: 100%; min-height: 45px; padding: 12px 16px; border: 0; border-radius: 999px; background: var(--zt-blue); color: #fff; font: 600 12px/1 Inter, system-ui, sans-serif; cursor: pointer; }
+.zt-talk-primary:hover { background: #006fd0; }
+.zt-talk-primary:disabled { opacity: .45; cursor: wait; }
+.zt-talk-form-message { min-height: 18px; margin: 7px 0 0; color: #b42318; text-align: center; font: 500 11px/1.4 Inter, system-ui, sans-serif; }
+.zt-talk-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 16px 0 12px; }
+.zt-talk-slot { min-height: 44px; border: 1px solid var(--zt-line); border-radius: 12px; background: #fff; color: var(--zt-ink); font: 600 12px/1 Inter, system-ui, sans-serif; cursor: pointer; }
+.zt-talk-slot[aria-pressed="true"] { border-color: var(--zt-blue); background: #eef7ff; box-shadow: 0 0 0 3px rgba(0, 131, 245, .1); }
+.zt-talk-confirmed { padding: 28px 10px; text-align: center; }
+.zt-talk-check { width: 50px; height: 50px; margin: 0 auto 14px; display: grid; place-items: center; border-radius: 17px; background: #ebfaf2; color: #087a45; font-size: 23px; }
+
+@media (max-width: 640px) {
+  .zt-talk-launcher { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); min-height: 46px; }
+  .zt-talk-panel { inset: max(10px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)); width: auto; height: auto; max-height: none; border-radius: 24px; transform-origin: 50% 100%; }
+  .zt-talk-topbar { min-height: 68px; padding: 12px 12px 12px 15px; }
+  .zt-talk-scroll { padding: 20px 16px 16px; }
+  .zt-talk-heading { font-size: 32px; }
+  .zt-talk-field-row { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zt-talk-launcher, .zt-talk-backdrop, .zt-talk-panel, .zt-talk-guide { transition: none; }
+  .zt-talk-pending::before { animation-duration: 1.8s; }
+}

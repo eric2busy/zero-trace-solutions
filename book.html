@@ -27,6 +27,7 @@
     .soft-gradient-top { background:radial-gradient(ellipse 140% 90% at 15% -5%,rgba(0,131,245,.16) 0%,transparent 55%),radial-gradient(ellipse 100% 80% at 95% 5%,rgba(0,131,245,.09) 0%,transparent 50%),linear-gradient(180deg,#eef6ff 0%,#fff 70%); }
     .slot-btn[aria-pressed="true"] { border-color:#0083F5; box-shadow:0 0 0 3px rgba(0,131,245,.14); background:#eef6ff; }
   </style>
+  <link rel="stylesheet" href="/assets/talk-to-zero-trace.css" />
 </head>
 <body class="bg-white text-dark antialiased">
   <header class="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
@@ -162,5 +163,6 @@
       }catch(err){slotMessage.textContent=err.message||'Unable to confirm right now.';confirmBtn.disabled=false}finally{confirmBtn.textContent='Confirm walkthrough'}
     });
   </script>
+  <script src="/assets/talk-to-zero-trace.js" defer></script>
 </body>
 </html>

@@ -3,112 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Concierge — Zero Trace Solutions</title>
-  <meta name="description" content="Ask the automated Zero Trace concierge approved service questions and move into a verified walkthrough booking." />
-  <link rel="icon" href="/logo.svg" type="image/svg+xml" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config={theme:{extend:{colors:{primary:'#0083F5',dark:'#262626',muted:'#6C6C6C',light:'#F5F5F5',border:'#D3D3D3'},fontFamily:{sans:['Inter','Helvetica Neue','Arial','sans-serif'],display:['Cal Sans','Inter','Helvetica Neue','Arial','sans-serif']}}}}
-  </script>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <style>
-    @font-face{font-family:'Cal Sans';font-style:normal;font-display:swap;font-weight:400;src:url(https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff2) format('woff2')}
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    *{box-sizing:border-box}body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#262626}.font-display{font-family:'Cal Sans','Inter',system-ui,sans-serif;font-weight:400;letter-spacing:-.025em}
-    .page-gradient{background:radial-gradient(ellipse 90% 55% at 10% 0%,rgba(0,131,245,.18),transparent 58%),radial-gradient(ellipse 65% 50% at 100% 5%,rgba(0,131,245,.1),transparent 55%),linear-gradient(180deg,#eef7ff 0,#f8fbff 52%,#fff 100%)}
-    .chat-scroll{scrollbar-width:thin;scrollbar-color:#cdd8e3 transparent}.assistant-bubble{border-radius:6px 20px 20px 20px}.user-bubble{border-radius:20px 6px 20px 20px}.slot[aria-pressed="true"]{border-color:#0083F5;background:#eef7ff;box-shadow:0 0 0 3px rgba(0,131,245,.12)}
-    @media (min-width:1024px){.workspace{height:min(760px,calc(100vh - 150px))}.chat-scroll{height:calc(100% - 175px)}}
-  </style>
+  <title>Talk to Zero Trace — Zero Trace Solutions</title>
+  <meta name="description" content="Get answers from Zero Trace Solutions and plan a verified walkthrough." />
+  <meta http-equiv="refresh" content="0; url=/?talk=open" />
+  <link rel="canonical" href="https://zerotraceusa.com/" />
 </head>
-<body class="bg-white text-dark antialiased">
-  <header class="fixed top-0 inset-x-0 z-50 px-4 pt-4">
-    <div class="max-w-6xl mx-auto flex items-center justify-between bg-white/85 backdrop-blur-xl border border-white rounded-full px-5 py-3 shadow-sm">
-      <a href="/" class="flex items-center"><img src="/logo.svg" alt="Zero Trace Solutions" class="h-7 w-auto" /></a>
-      <div class="flex items-center gap-2"><span class="hidden sm:inline text-xs text-muted mr-2">Automated concierge</span><a href="mailto:support@zerotraceusa.com" class="px-4 py-2 rounded-full border border-border text-sm font-medium hover:border-primary transition">Human help</a></div>
-    </div>
-  </header>
-
-  <main class="page-gradient min-h-screen pt-28 pb-10 px-4 sm:px-5">
-    <div class="max-w-6xl mx-auto">
-      <div class="mb-7 lg:flex lg:items-end lg:justify-between">
-        <div><div class="inline-flex items-center gap-2 rounded-full bg-white/80 border border-white px-3 py-1 text-xs font-semibold text-primary mb-3"><span class="w-2 h-2 rounded-full bg-primary"></span>AI CONCIERGE</div><h1 class="font-display text-4xl sm:text-5xl leading-tight max-w-2xl">Clear answers. A verified path to your walkthrough.</h1></div>
-        <p class="text-muted text-sm max-w-sm mt-4 lg:mt-0">Ask about approved services, share the basics of your space, or schedule from the live booking system. Unknowns go to a person.</p>
-      </div>
-
-      <div class="workspace grid lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,.65fr)] gap-5">
-        <section class="bg-white border border-white rounded-[28px] shadow-[0_20px_70px_rgba(36,64,96,.13)] overflow-hidden min-h-[670px] lg:min-h-0 flex flex-col" aria-label="Automated concierge conversation">
-          <div class="px-5 sm:px-7 py-4 border-b border-border/60 flex items-center justify-between">
-            <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-2xl bg-primary text-white grid place-items-center font-semibold">ZT</div><div><h2 class="font-semibold text-sm">Zero Trace concierge</h2><p class="text-xs text-muted">Automated · approved knowledge only</p></div></div>
-            <button id="resetChat" class="text-xs font-medium text-muted hover:text-primary">Start over</button>
-          </div>
-          <div id="messages" class="chat-scroll flex-1 overflow-y-auto p-5 sm:p-7 space-y-5" aria-live="polite"></div>
-          <div class="px-5 sm:px-7 pb-3 flex gap-2 overflow-x-auto" aria-label="Suggested questions">
-            <button class="quick shrink-0 rounded-full bg-blue-50 text-primary px-4 py-2 text-xs font-medium" data-message="What does Zero Trace do?">What do you do?</button>
-            <button class="quick shrink-0 rounded-full bg-blue-50 text-primary px-4 py-2 text-xs font-medium" data-message="What types of spaces can you discuss?">Types of spaces</button>
-            <button class="quick shrink-0 rounded-full bg-blue-50 text-primary px-4 py-2 text-xs font-medium" data-message="How does pricing work?">Pricing process</button>
-            <button class="quick shrink-0 rounded-full bg-blue-50 text-primary px-4 py-2 text-xs font-medium" data-message="I want to schedule a walkthrough.">Schedule</button>
-          </div>
-          <form id="chatForm" class="p-4 sm:px-6 sm:pb-6">
-            <div class="flex items-end gap-3 bg-light rounded-[22px] p-2 pl-4 border border-transparent focus-within:bg-white focus-within:border-primary/40 transition">
-              <label for="chatInput" class="sr-only">Message the automated concierge</label><textarea id="chatInput" rows="1" maxlength="1200" placeholder="Ask about services or your space…" class="resize-none flex-1 bg-transparent py-2.5 text-sm outline-none max-h-32" required></textarea>
-              <button id="sendButton" type="submit" class="w-11 h-11 shrink-0 rounded-2xl bg-primary text-white grid place-items-center disabled:opacity-50" aria-label="Send message"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 14-7-4 14-3-6-7-1Z"/><path d="m12 13 7-8"/></svg></button>
-            </div>
-            <p class="text-[11px] text-muted text-center mt-2">Do not share passwords, card numbers, IDs, or medical records.</p>
-          </form>
-        </section>
-
-        <aside class="space-y-5 lg:overflow-y-auto chat-scroll lg:pr-1">
-          <section class="bg-dark text-white rounded-[28px] p-6">
-            <div class="text-xs text-blue-300 font-bold tracking-wider mb-3">SAFE BY DESIGN</div><h2 class="font-display text-2xl mb-3">The concierge knows its limits.</h2>
-            <p class="text-sm text-gray-300 leading-relaxed">Answers come from approved customer knowledge. Pricing commitments, safety or chemical questions, exact service-area fit, emergencies, and anything uncertain are sent to the team for confirmation.</p>
-            <a href="mailto:support@zerotraceusa.com" class="inline-flex mt-5 text-sm font-medium text-white border-b border-blue-300/60 pb-1">support@zerotraceusa.com</a>
-          </section>
-          <section id="handoffCard" class="bg-white rounded-[28px] border border-white shadow-sm p-6">
-            <div class="flex items-center justify-between gap-3 mb-3"><div class="text-xs text-primary font-bold tracking-wider">VERIFIED WALKTHROUGH</div><span class="text-[11px] bg-emerald-50 text-emerald-700 rounded-full px-2.5 py-1">Live schedule</span></div>
-            <h2 class="font-display text-2xl">Ready to plan the next step?</h2><p class="text-sm text-muted mt-2">Save your request, view actual availability, and confirm only after the booking system re-checks your slot.</p>
-            <button id="openLeadForm" class="mt-5 w-full rounded-full bg-primary text-white py-3.5 text-sm font-medium hover:bg-blue-600 transition">Plan a walkthrough</button>
-          </section>
-          <section id="leadCard" class="hidden bg-white rounded-[28px] border border-white shadow-sm p-6" aria-live="polite">
-            <div class="flex items-center justify-between mb-4"><div><div class="text-xs text-primary font-bold tracking-wider">STEP 1 OF 2</div><h2 class="font-display text-2xl">Your walkthrough details</h2></div><button id="closeLeadForm" class="text-2xl text-muted" aria-label="Close walkthrough form">×</button></div>
-            <form id="leadForm" class="space-y-3">
-              <input name="name" required maxlength="120" placeholder="Full name *" class="w-full px-4 py-3 rounded-xl border border-border text-sm outline-none focus:border-primary" />
-              <div class="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3"><input name="email" type="email" required maxlength="120" placeholder="Email *" class="w-full px-4 py-3 rounded-xl border border-border text-sm outline-none focus:border-primary" /><input name="phone" type="tel" required maxlength="40" placeholder="Phone *" class="w-full px-4 py-3 rounded-xl border border-border text-sm outline-none focus:border-primary" /></div>
-              <select name="businessType" required class="w-full px-4 py-3 rounded-xl border border-border text-sm bg-white outline-none focus:border-primary"><option value="">Facility type *</option><option>Office</option><option>Classroom</option><option>Commercial</option><option>Other</option></select>
-              <input name="location" required maxlength="200" placeholder="Service location / city *" class="w-full px-4 py-3 rounded-xl border border-border text-sm outline-none focus:border-primary" />
-              <div class="grid grid-cols-2 gap-3"><input name="preferredDate" type="date" required class="w-full px-3 py-3 rounded-xl border border-border text-sm outline-none focus:border-primary" /><select name="preferredTime" class="w-full px-3 py-3 rounded-xl border border-border text-sm bg-white outline-none focus:border-primary"><option>Flexible</option><option>Morning</option><option>Afternoon</option></select></div>
-              <textarea name="notes" rows="3" maxlength="1000" placeholder="Areas of concern, access needs, or restrictions" class="w-full px-4 py-3 rounded-xl border border-border text-sm outline-none focus:border-primary"></textarea>
-              <button id="leadButton" class="w-full rounded-full bg-primary text-white py-3.5 text-sm font-medium">See verified times</button><p id="leadMessage" class="text-xs text-muted text-center"></p>
-            </form>
-          </section>
-          <section id="availabilityCard" class="hidden bg-white rounded-[28px] border border-white shadow-sm p-6" aria-live="polite">
-            <div class="text-xs text-primary font-bold tracking-wider">STEP 2 OF 2</div><h2 class="font-display text-2xl">Choose a verified time</h2><p id="slotSummary" class="text-sm text-muted mt-1"></p>
-            <div id="slots" class="grid grid-cols-2 gap-2 mt-4"></div><p id="slotMessage" class="text-xs text-muted mt-3"></p><button id="bookButton" disabled class="mt-4 w-full rounded-full bg-dark text-white py-3.5 text-sm font-medium disabled:opacity-40">Confirm walkthrough</button>
-          </section>
-          <section id="confirmedCard" class="hidden bg-white rounded-[28px] border border-emerald-200 shadow-sm p-6 text-center" aria-live="polite">
-            <div class="w-12 h-12 mx-auto rounded-2xl bg-emerald-50 text-emerald-700 grid place-items-center text-xl mb-3">✓</div><div class="text-xs text-emerald-700 font-bold tracking-wider">CONFIRMED</div><h2 class="font-display text-2xl mt-1">Your walkthrough is booked.</h2><p id="confirmedText" class="text-sm text-muted mt-2"></p>
-          </section>
-        </aside>
-      </div>
-    </div>
-  </main>
-
-  <script>
-    const messagesEl=document.getElementById('messages'),chatForm=document.getElementById('chatForm'),chatInput=document.getElementById('chatInput'),sendButton=document.getElementById('sendButton');
-    const session={id:crypto.randomUUID(),messages:[]},welcome="I’m the automated Zero Trace concierge. I can answer approved service questions, help qualify your request, and move you into the verified walkthrough schedule. What can I help with?";
-    function addMessage(role,text){const row=document.createElement('div');row.className=`flex ${role==='user'?'justify-end':'justify-start'}`;const bubble=document.createElement('div');bubble.className=role==='user'?'user-bubble max-w-[86%] bg-primary text-white px-4 py-3 text-sm leading-relaxed':'assistant-bubble max-w-[90%] bg-light border border-border/50 px-4 py-3 text-sm leading-relaxed';bubble.textContent=text;row.appendChild(bubble);messagesEl.appendChild(row);messagesEl.scrollTop=messagesEl.scrollHeight}
-    function resetConversation(){session.id=crypto.randomUUID();session.messages=[];messagesEl.innerHTML='';addMessage('assistant',welcome)}resetConversation();document.getElementById('resetChat').addEventListener('click',resetConversation);
-    async function sendMessage(text){text=text.trim();if(!text)return;session.messages.push({role:'user',text});addMessage('user',text);sendButton.disabled=true;chatInput.disabled=true;const pending=document.createElement('div');pending.className='text-xs text-muted pl-2';pending.textContent='Checking approved knowledge…';messagesEl.appendChild(pending);messagesEl.scrollTop=messagesEl.scrollHeight;
-      try{const res=await fetch('/api/concierge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:session.id,messages:session.messages})});const data=await res.json().catch(()=>({}));pending.remove();if(!res.ok)throw new Error(data.error||'The concierge is temporarily unavailable.');session.id=data.sessionId;session.messages.push({role:'assistant',text:data.message.text});addMessage('assistant',data.message.text);if(['lead','availability','booking'].includes(data.handoff?.type))document.getElementById('handoffCard').scrollIntoView({behavior:'smooth',block:'center'});if(data.escalation?.required)addMessage('assistant','A person should confirm this. You can email support@zerotraceusa.com, and I won’t make an unsupported promise.');}
-      catch(error){pending.remove();addMessage('assistant',error.message||'I could not safely answer that. Please email support@zerotraceusa.com.')}finally{sendButton.disabled=false;chatInput.disabled=false;chatInput.focus()}}
-    chatForm.addEventListener('submit',event=>{event.preventDefault();const text=chatInput.value;chatInput.value='';sendMessage(text)});chatInput.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatForm.requestSubmit()}});document.querySelectorAll('.quick').forEach(button=>button.addEventListener('click',()=>sendMessage(button.dataset.message)));
-
-    const handoffCard=document.getElementById('handoffCard'),leadCard=document.getElementById('leadCard'),leadForm=document.getElementById('leadForm'),leadButton=document.getElementById('leadButton'),leadMessage=document.getElementById('leadMessage'),availabilityCard=document.getElementById('availabilityCard'),slotsEl=document.getElementById('slots'),slotMessage=document.getElementById('slotMessage'),slotSummary=document.getElementById('slotSummary'),bookButton=document.getElementById('bookButton'),confirmedCard=document.getElementById('confirmedCard');let leadId,leadData,selectedSlot;
-    const dateInput=leadForm.elements.preferredDate,tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);dateInput.min=tomorrow.toISOString().slice(0,10);
-    document.getElementById('openLeadForm').addEventListener('click',()=>{handoffCard.classList.add('hidden');leadCard.classList.remove('hidden');leadCard.scrollIntoView({behavior:'smooth',block:'start'})});document.getElementById('closeLeadForm').addEventListener('click',()=>{leadCard.classList.add('hidden');handoffCard.classList.remove('hidden')});
-    function prettyDate(value){const [y,m,d]=value.split('-').map(Number);return new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric'}).format(new Date(y,m-1,d,12))}
-    async function loadAvailability(){selectedSlot=null;bookButton.disabled=true;slotsEl.innerHTML='';slotMessage.textContent='Checking the live schedule…';availabilityCard.classList.remove('hidden');const params=new URLSearchParams({date:leadData.preferredDate,window:leadData.preferredTime||'Flexible'});const res=await fetch(`/api/availability?${params}`),data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.error||'Could not load availability');slotSummary.textContent=`${prettyDate(leadData.preferredDate)} · ${leadData.preferredTime||'Flexible'}`;if(!data.slots?.length){slotMessage.textContent='No verified times match. Choose another date in the form.';return}slotMessage.textContent='Your choice will be re-checked before confirmation.';data.slots.forEach(slot=>{const button=document.createElement('button');button.type='button';button.className='slot rounded-xl border border-border px-3 py-3 text-sm font-medium';button.textContent=slot.label;button.setAttribute('aria-pressed','false');button.addEventListener('click',()=>{document.querySelectorAll('.slot').forEach(item=>item.setAttribute('aria-pressed','false'));button.setAttribute('aria-pressed','true');selectedSlot=slot;bookButton.disabled=false});slotsEl.appendChild(button)})}
-    leadForm.addEventListener('submit',async event=>{event.preventDefault();leadButton.disabled=true;leadButton.textContent='Saving request…';leadMessage.textContent='';try{leadData=Object.fromEntries(new FormData(leadForm).entries());const res=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(leadData)}),data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.error||'Could not save the request');leadId=data.id;leadCard.classList.add('hidden');await loadAvailability();availabilityCard.scrollIntoView({behavior:'smooth',block:'start'})}catch(error){leadMessage.textContent=error.message||'Something went wrong. Please try again.'}finally{leadButton.disabled=false;leadButton.textContent='See verified times'}});
-    bookButton.addEventListener('click',async()=>{if(!leadId||!selectedSlot)return;bookButton.disabled=true;bookButton.textContent='Re-checking…';try{const res=await fetch('/api/book',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...leadData,leadId,start:selectedSlot.start,end:selectedSlot.end})}),data=await res.json().catch(()=>({}));if(res.status===409){slotMessage.textContent=data.error||'That time is no longer open.';await loadAvailability();return}if(!res.ok)throw new Error(data.error||'Could not confirm the booking');availabilityCard.classList.add('hidden');confirmedCard.classList.remove('hidden');document.getElementById('confirmedText').textContent=`${prettyDate(leadData.preferredDate)} at ${selectedSlot.label} · ${leadData.location}`;confirmedCard.scrollIntoView({behavior:'smooth',block:'center'})}catch(error){slotMessage.textContent=error.message||'Could not confirm. Please try again.';bookButton.disabled=false}finally{bookButton.textContent='Confirm walkthrough'}});
-  </script>
+<body>
+  <p><a href="/?talk=open">Continue to Zero Trace Solutions</a></p>
+  <script>location.replace('/?talk=open');</script>
 </body>
 </html>
