@@ -262,6 +262,7 @@ test('site-wide talk overlay hands actions to existing lead and booking endpoint
 test('homepage revisions keep two hero actions and cover the mobile safe area', () => {
   const home = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   const script = fs.readFileSync(path.join(__dirname, '..', 'assets', 'talk-to-zero-trace.js'), 'utf8');
+  const styles = fs.readFileSync(path.join(__dirname, '..', 'assets', 'talk-to-zero-trace.css'), 'utf8');
   const heroActions = home.match(/<div class="flex flex-wrap gap-3">([\s\S]*?)<\/div>\s*<\/div>\s*<div class="mt-14/);
   assert.ok(heroActions, 'hero action group should be present');
   assert.equal((heroActions[1].match(/<(?:a|button)\b/g) || []).length, 2);
@@ -271,7 +272,16 @@ test('homepage revisions keep two hero actions and cover the mobile safe area', 
   assert.match(script, /aria-label="Questions\?"/);
   assert.match(script, /<span>Questions\?<\/span>/);
   assert.match(home, /viewport-fit=cover/);
-  assert.match(home, /name="theme-color" content="#eaf5ff"/);
+  assert.match(home, /name="theme-color" content="#dfeafc"/);
   assert.match(home, /safe-area-inset-top/);
-  assert.match(home, /html \{ scroll-behavior: smooth; background-color: #eaf5ff; \}/);
+  assert.match(home, /html \{ scroll-behavior: smooth; background-color: #dfeafc; \}/);
+  assert.match(home, /body\.mobile-top-surface \{ background-color: #dfeafc; \}/);
+  assert.match(home, /<body class="mobile-top-surface text-dark antialiased">/);
+  assert.match(home, /header\.site-header \{[\s\S]*?safe-area-inset-top/);
+  assert.match(home, /section\.hero-surface \{ padding-top: calc\(7rem \+ env\(safe-area-inset-top\)\); \}/);
+  const launcher = styles.match(/\.zt-talk-launcher \{([\s\S]*?)\n\}/);
+  assert.ok(launcher, 'launcher styles should be present');
+  assert.match(launcher[1], /border: 0;/);
+  assert.doesNotMatch(launcher[1], /border: 1px/);
+  assert.match(styles, /\.zt-talk-launcher:focus-visible \{ outline: 3px solid rgba\(0, 131, 245, \.34\); outline-offset: 3px; \}/);
 });
