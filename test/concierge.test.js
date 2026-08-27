@@ -258,3 +258,20 @@ test('site-wide talk overlay hands actions to existing lead and booking endpoint
   assert.doesNotMatch(`${script}\n${pages.join('\n')}`, /NOTION_TOKEN|GOOGLE_PRIVATE_KEY|OPENAI_API_KEY/);
   assert.doesNotMatch(pages.join('\n'), /AI Concierge|AI concierge|Ask AI|Ask the AI|Concierge/);
 });
+
+test('homepage revisions keep two hero actions and cover the mobile safe area', () => {
+  const home = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const script = fs.readFileSync(path.join(__dirname, '..', 'assets', 'talk-to-zero-trace.js'), 'utf8');
+  const heroActions = home.match(/<div class="flex flex-wrap gap-3">([\s\S]*?)<\/div>\s*<\/div>\s*<div class="mt-14/);
+  assert.ok(heroActions, 'hero action group should be present');
+  assert.equal((heroActions[1].match(/<(?:a|button)\b/g) || []).length, 2);
+  assert.match(heroActions[1], /Schedule a walkthrough/);
+  assert.match(heroActions[1], /How it works/);
+  assert.doesNotMatch(heroActions[1], /Questions\?|data-zt-talk-open/);
+  assert.match(script, /aria-label="Questions\?"/);
+  assert.match(script, /<span>Questions\?<\/span>/);
+  assert.match(home, /viewport-fit=cover/);
+  assert.match(home, /name="theme-color" content="#eaf5ff"/);
+  assert.match(home, /safe-area-inset-top/);
+  assert.match(home, /html \{ scroll-behavior: smooth; background-color: #eaf5ff; \}/);
+});

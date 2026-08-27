@@ -31,8 +31,8 @@
   const root = document.createElement('div');
   root.id = 'zt-talk-root';
   root.innerHTML = `
-    <button class="zt-talk-launcher" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="zt-talk-panel">
-      <span class="zt-talk-launcher-mark" aria-hidden="true">ZT</span><span>Talk to Zero Trace</span>
+    <button class="zt-talk-launcher" type="button" aria-label="Questions?" aria-haspopup="dialog" aria-expanded="false" aria-controls="zt-talk-panel">
+      <span class="zt-talk-launcher-mark" aria-hidden="true">ZT</span><span>Questions?</span>
     </button>
     <div class="zt-talk-backdrop" data-open="false" aria-hidden="true"></div>
     <section id="zt-talk-panel" class="zt-talk-panel" data-open="false" role="dialog" aria-modal="true" aria-labelledby="zt-talk-title" aria-hidden="true">
