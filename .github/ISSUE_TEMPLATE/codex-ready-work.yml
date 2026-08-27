@@ -1,0 +1,133 @@
+name: Codex-ready engineering work
+description: Define a bounded Zero Trace engineering task that a Codex worker can execute independently.
+title: "[Codex] "
+labels:
+  - "codex-ready"
+  - "status: queued"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form only when the task is ready to enter the Codex queue. Do not include secrets or material customer data. The worker must follow `AGENTS.md` and all applicable rules in `company/`.
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: State one observable user or business outcome.
+      placeholder: A confirmed booking stores the exact selected Pacific time in Notion.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and relevant systems
+      description: Explain why this matters and link relevant code, workflows, designs, logs, or prior issues. Do not paste secrets.
+      placeholder: |
+        Relevant systems: website API, Notion, Google Calendar
+        Relevant files: api/book.js, company/workflows/lead-to-service.yml
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope
+      description: List the changes the worker is authorized to prepare.
+      placeholder: |
+        - Correct the Notion date serialization.
+        - Add regression coverage.
+        - Update affected documentation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: Name adjacent work that must not be included.
+      placeholder: Do not change email delivery, pricing, or the customer booking flow.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Provide a testable checklist. Each item must be independently verifiable.
+      placeholder: |
+        - [ ] Notion accepts the confirmed time without a validation error.
+        - [ ] The stored time represents the customer-selected Pacific slot.
+        - [ ] Existing booking and email tests still pass.
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Required verification
+      description: List automated checks and any repeatable manual verification path.
+      placeholder: Run `npm test`; exercise the booking endpoint with mocked Notion and Calendar responses.
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Link prerequisite issues, approvals, designs, or external work. Enter "None" if there are no dependencies.
+      placeholder: "Blocked by #123, or None."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Consequence level
+      description: Choose the highest applicable level. High/consequential work requires explicit owner approval before merge and production always requires separate approval.
+      options:
+        - Low — internal, reversible, no external side effects
+        - Medium — customer-visible or integration behavior, safely reversible
+        - High/consequential — production policy, data, security, legal, financial, destructive, or material external effect
+    validations:
+      required: true
+
+  - type: textarea
+    id: approvals
+    attributes:
+      label: Approval boundaries
+      description: Identify actions the worker must prepare but not perform, and who must approve them. Enter "Standard PR review; production deployment separately approval-gated" if no additional boundary applies.
+      placeholder: Owner must approve the production environment-variable change and deployment. Worker may prepare code and documentation only.
+    validations:
+      required: true
+
+  - type: textarea
+    id: rollback
+    attributes:
+      label: Failure and rollback expectations
+      description: State the required safe failure state and how a reviewer or operator can reverse the change.
+      placeholder: Calendar events must be rolled back if Notion persistence fails; code rollback is a PR revert.
+    validations:
+      required: true
+
+  - type: textarea
+    id: handoff
+    attributes:
+      label: Handoff notes
+      description: Add owner preferences, reviewer context, or communication expectations. Enter "None" if not needed.
+      placeholder: Keep the existing email implementation unchanged and call it out in the PR verification.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: ready
+    attributes:
+      label: Ready for Codex
+      options:
+        - label: The task is bounded, dependencies are satisfied or explicitly identified, and acceptance criteria are testable.
+          required: true
+        - label: No secrets or material customer data are included.
+          required: true
+        - label: Production deployment and consequential actions remain explicitly approval-gated.
+          required: true
