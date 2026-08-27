@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#eaf5ff" />
+  <meta name="theme-color" content="#dfeafc" />
   <title>Zero Trace Solutions — Thorough sanitizing that leaves nothing behind but peace of mind</title>
   <meta name="description" content="Zero Trace Solutions — hospital-grade sanitizing for offices, classrooms, and commercial spaces." />
   <link rel="icon" href="/logo.svg" type="image/svg+xml" />
@@ -73,14 +73,16 @@
       font-weight: 400;
       letter-spacing: -0.02em;
     }
-    html { scroll-behavior: smooth; background-color: #eaf5ff; }
-    body { background-color: #ffffff; }
-    .site-header {
+    html { scroll-behavior: smooth; background-color: #dfeafc; }
+    body.mobile-top-surface { background-color: #dfeafc; }
+    body.mobile-top-surface > main,
+    body.mobile-top-surface > footer { background-color: #ffffff; }
+    header.site-header {
       padding-top: calc(1rem + env(safe-area-inset-top));
       padding-left: max(1rem, env(safe-area-inset-left));
       padding-right: max(1rem, env(safe-area-inset-right));
     }
-    .hero-surface { padding-top: calc(7rem + env(safe-area-inset-top)); }
+    section.hero-surface { padding-top: calc(7rem + env(safe-area-inset-top)); }
     /* Full-bleed soft gradients from the very top of the viewport */
     .soft-gradient-top {
       background:
@@ -97,7 +99,7 @@
 </style>
   <link rel="stylesheet" href="/assets/talk-to-zero-trace.css" />
 </head>
-<body class="bg-white text-dark antialiased">
+<body class="mobile-top-surface text-dark antialiased">
   <header class="site-header fixed top-0 left-0 right-0 z-50 px-4 pt-4">
     <div class="max-w-6xl mx-auto">
       <div class="flex items-center justify-between bg-white/80 backdrop-blur-md border border-border/50 rounded-full px-5 py-3 shadow-sm">
