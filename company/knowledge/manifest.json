@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "knowledgeVersion": "2026-08-26.1",
+  "status": "approved",
+  "source": {
+    "system": "Notion",
+    "pageId": "3c888463-8802-8129-9186-ce107eaf13e9",
+    "pageTitle": "05 — Approved Customer Knowledge Base",
+    "pageUrl": "https://app.notion.com/p/3c888463880281299186ce107eaf13e9",
+    "fetchedAt": "2026-08-26T23:51:56.265Z"
+  },
+  "files": {
+    "customerKnowledge": "customer-knowledge.v1.json",
+    "conciergePolicy": "concierge-policy.v1.json"
+  },
+  "changeControl": "Customer-facing additions require a source and approval state. High-risk claims remain escalation-only until explicitly approved."
+}
