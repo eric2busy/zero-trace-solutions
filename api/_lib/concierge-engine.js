@@ -83,6 +83,30 @@ function sanitizeText(value, max = 1200) {
   return typeof value === 'string' ? value.trim().replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, max) : '';
 }
 
+function safeProviderMessage(value) {
+  return sanitizeText(value, 500)
+    .replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED]')
+    .replace(/\bsk-[A-Za-z0-9_-]+\b/g, '[REDACTED]');
+}
+
+async function providerError(response) {
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+  const details = payload?.error || {};
+  const error = new Error(safeProviderMessage(details.message) || `OpenAI upstream returned ${response.status}`);
+  error.code = 'OPENAI_UPSTREAM_ERROR';
+  error.providerStatus = response.status;
+  error.providerErrorType = sanitizeText(details.type, 120) || 'unknown';
+  error.providerErrorCode = sanitizeText(details.code, 120) || 'unknown';
+  error.providerMessage = error.message;
+  error.providerStage = 'request';
+  return error;
+}
+
 function normalizeMessages(messages) {
   if (!Array.isArray(messages)) return [];
   return messages.slice(-12).map((message) => ({
@@ -192,12 +216,35 @@ async function routeWithModel({ messages, apiKey, model, fetchImpl = fetch }) {
     }),
   });
   if (!response.ok) {
-    const error = new Error(`OpenAI upstream returned ${response.status}`);
-    error.status = response.status;
+    throw await providerError(response);
+  }
+  let payload;
+  try {
+    payload = await response.json();
+  } catch (cause) {
+    const error = new Error('OpenAI returned an invalid JSON response');
+    error.code = 'OPENAI_RESPONSE_PARSE_ERROR';
+    error.providerStatus = response.status;
+    error.providerErrorType = 'invalid_json';
+    error.providerErrorCode = 'invalid_response_body';
+    error.providerMessage = error.message;
+    error.providerStage = 'response';
+    error.cause = cause;
     throw error;
   }
-  const payload = await response.json();
-  return validateDecision(JSON.parse(outputText(payload)));
+  try {
+    return validateDecision(JSON.parse(outputText(payload)));
+  } catch (cause) {
+    const error = new Error('OpenAI returned an invalid structured routing decision');
+    error.code = 'OPENAI_RESPONSE_PARSE_ERROR';
+    error.providerStatus = response.status;
+    error.providerErrorType = 'invalid_structured_output';
+    error.providerErrorCode = 'invalid_routing_decision';
+    error.providerMessage = error.message;
+    error.providerStage = 'response';
+    error.cause = cause;
+    throw error;
+  }
 }
 
 async function createConciergeResponse({ messages, apiKey, model = 'gpt-5.4-mini', fetchImpl }) {

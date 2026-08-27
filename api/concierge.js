@@ -74,7 +74,20 @@ module.exports = async function handler(req, res) {
     }, origin);
   } catch (error) {
     const invalid = error?.code === 'INVALID_INPUT';
-    logEvent({ event: invalid ? 'validation_failure' : 'upstream_failure', requestId, sessionId, route: 'concierge', errorType: invalid ? 'invalid_input' : 'model_or_response_error' });
+    logEvent({
+      event: invalid ? 'validation_failure' : 'upstream_failure',
+      requestId,
+      sessionId,
+      route: 'concierge',
+      errorType: invalid ? 'invalid_input' : 'model_or_response_error',
+      ...(invalid ? {} : {
+        providerStatus: Number.isInteger(error?.providerStatus) ? error.providerStatus : null,
+        providerErrorType: error?.providerErrorType || error?.name || 'unknown',
+        providerErrorCode: error?.providerErrorCode || error?.code || 'unknown',
+        providerMessage: error?.providerMessage || 'OpenAI request failed before a provider response was available',
+        providerStage: error?.providerStage || 'transport',
+      }),
+    });
     return json(res, invalid ? 400 : 502, {
       error: invalid ? error.message : 'I could not safely answer that right now. Please try again or email support@zerotraceusa.com.',
       escalation: { required: true, reason: invalid ? 'malformed_input' : 'upstream_failure', supportEmail: 'support@zerotraceusa.com' },

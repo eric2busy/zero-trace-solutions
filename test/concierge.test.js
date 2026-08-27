@@ -16,6 +16,14 @@ function modelResponse(decision, ok = true, status = 200) {
   };
 }
 
+function providerFailure({ status = 400, type = 'invalid_request_error', code = 'invalid_request', message = 'The request was rejected.' } = {}) {
+  return {
+    ok: false,
+    status,
+    async json() { return { error: { type, code, message } }; },
+  };
+}
+
 function approvedDecision(overrides = {}) {
   return {
     intent: 'approved_faq',
@@ -144,6 +152,38 @@ test('upstream model failure fails closed and returns escalation metadata', asyn
   assert.equal(res.body.escalation.required, true);
   assert.equal(res.body.escalation.reason, 'upstream_failure');
   assert.match(res.body.error, /could not safely answer/i);
+});
+
+test('upstream logging records safe provider details without credentials', async (t) => {
+  const originalFetch = global.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalLog = console.info;
+  const logs = [];
+  t.after(() => {
+    global.fetch = originalFetch;
+    console.info = originalLog;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+  });
+  process.env.OPENAI_API_KEY = 'sk-test-secret';
+  console.info = (value) => logs.push(JSON.parse(value));
+  global.fetch = async () => providerFailure({
+    status: 404,
+    code: 'model_not_found',
+    message: 'Model unavailable for Bearer sk-test-secret',
+  });
+
+  const req = { method: 'POST', headers: {}, body: { messages: [{ role: 'user', text: 'What services do you offer?' }] } };
+  const res = mockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 502);
+  assert.equal(logs[0].providerStatus, 404);
+  assert.equal(logs[0].providerErrorType, 'invalid_request_error');
+  assert.equal(logs[0].providerErrorCode, 'model_not_found');
+  assert.equal(logs[0].providerStage, 'request');
+  assert.match(logs[0].providerMessage, /\[REDACTED\]/);
+  assert.doesNotMatch(JSON.stringify(logs[0]), /sk-test-secret/);
 });
 
 test('prompt injection is refused without exposing policy details', async () => {
