@@ -2,6 +2,17 @@
 
 Static multi-page site for Zero Trace Solutions (commercial sanitizing).
 
+## AI concierge
+
+The customer concierge is available at `/concierge.html` and uses `POST /api/concierge`. The server routes intent and qualification through the OpenAI Responses API, but customer-facing business facts are rendered only from the approved, versioned files under `company/knowledge/`.
+
+Required configuration:
+
+- `OPENAI_API_KEY` — server-side only; never expose it to browser code.
+- `OPENAI_CONCIERGE_MODEL` — optional; defaults to `gpt-5.4-mini`.
+
+The model response is not stored by OpenAI (`store: false`). Application logs contain route/model metadata, approved knowledge IDs, handoff state, and failure categories—not customer message bodies, contact details, secrets, or hidden chain-of-thought. Lead, availability, and booking actions continue to use the existing `/api/leads`, `/api/availability`, and `/api/book` endpoints.
+
 ## Lead form → Notion
 
 Walkthrough requests from `/book.html` POST to `/api/leads`, which creates a row in the Notion **Walkthrough Requests** database.

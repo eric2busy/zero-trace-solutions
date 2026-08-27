@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "knowledgeVersion": "2026-08-26.1",
+  "approvedFacts": [
+    {
+      "id": "company.identity",
+      "topics": ["company", "business", "contact", "website"],
+      "answer": "Zero Trace Solutions LLC is a professional sanitization service business, not a conventional cleaning company. You can reach the team at support@zerotraceusa.com or visit zerotraceusa.com."
+    },
+    {
+      "id": "service.default_explanation",
+      "topics": ["service", "sanitization", "process", "what do you do"],
+      "answer": "Zero Trace Solutions provides professional sanitization services focused on high-touch and frequently used areas. We use a controlled spray-mist process where appropriate, follow the product label and required contact time, and avoid direct spraying of sensitive electronics and other restricted areas."
+    },
+    {
+      "id": "service.typical_areas",
+      "topics": ["areas", "surfaces", "touchpoints", "scope"],
+      "answer": "When appropriate, service may address door handles and push plates, hand-contact edges, light switches, cleared work surfaces, meeting-room tables and chair touch points, breakroom and restroom touch points, handrails, and shared equipment whose materials allow the approved treatment method. Final scope depends on the site and surfaces."
+    },
+    {
+      "id": "service.scope_distinction",
+      "topics": ["cleaning", "pre-cleaning", "electronics", "restrictions"],
+      "answer": "Sanitization is not ordinary janitorial cleaning. Visibly dirty surfaces may need pre-cleaning first. Sensitive electronics are generally no-direct-spray and should use an approved wipe method. Food, exposed food-prep areas, artwork, paper records, porous or sensitive materials, server equipment, and compliance-sensitive areas require appropriate restrictions or site-specific handling."
+    },
+    {
+      "id": "service.customer_types",
+      "topics": ["facilities", "business types", "who do you serve"],
+      "answer": "Zero Trace can discuss potential work for commercial environments such as offices, retail and small businesses, gyms, salons, schools and daycares, property-managed facilities, churches and community spaces, restaurants, auto dealerships, and certain medical or dental environments. Acceptance of a specific facility is subject to a walkthrough, product and procedure suitability, service-area rules, and applicable compliance requirements."
+    },
+    {
+      "id": "service.options",
+      "topics": ["one-time", "recurring", "walkthrough", "frequency"],
+      "answer": "One-time sanitization and recurring sanitization programs may be discussed. A walkthrough or assessment can help determine whether the service is a fit and define the appropriate scope."
+    },
+    {
+      "id": "pricing.process",
+      "topics": ["price", "pricing", "quote", "cost"],
+      "answer": "Pricing depends on the facility, areas to be treated, service frequency, access requirements and other scope details. I can collect a few details and help schedule a walkthrough so Zero Trace can confirm the right scope and pricing."
+    },
+    {
+      "id": "booking.verified_only",
+      "topics": ["availability", "schedule", "booking", "appointment"],
+      "answer": "I can help you check the verified booking schedule. A preferred day or time is not a confirmed appointment. A walkthrough is confirmed only after you select a currently available slot and the booking system returns confirmation."
+    },
+    {
+      "id": "privacy.minimum_data",
+      "topics": ["privacy", "personal information", "security"],
+      "answer": "Zero Trace collects only the information needed to qualify, serve, or book a customer. Please do not share passwords, full payment-card numbers, government IDs, medical records, or other unnecessary sensitive information here."
+    }
+  ],
+  "qualificationFields": [
+    "contactName",
+    "organizationName",
+    "email",
+    "phone",
+    "serviceLocation",
+    "facilityType",
+    "approximateSizeOrAreas",
+    "areasOfConcern",
+    "oneTimeOrRecurring",
+    "desiredFrequency",
+    "preferredDaysTimes",
+    "accessConstraints",
+    "urgencyOrDesiredStart",
+    "specialSurfacesOrRestrictions",
+    "customerRequest"
+  ],
+  "unknownOrRestricted": [
+    { "id": "unknown.service_area", "topic": "Exact service area, travel radius, fees, and out-of-area policy", "reason": "needs_owner_decision" },
+    { "id": "unknown.business_hours", "topic": "Customer support hours and automated chat hours", "reason": "needs_owner_decision" },
+    { "id": "unknown.booking_rules", "topic": "Final walkthrough duration, notice, buffers, booking limits, and blackout rules", "reason": "verify_runtime_configuration" },
+    { "id": "unknown.cancellation", "topic": "Cancellation, reschedule, and no-show policy", "reason": "needs_owner_decision" },
+    { "id": "unknown.pricing", "topic": "Prices, minimums, discounts, add-ons, premiums, and quote authority", "reason": "needs_owner_decision" },
+    { "id": "unknown.products", "topic": "Product names, registration information, label-approved uses, contact time, dilution, SDS, restrictions, and product claims", "reason": "needs_verified_sources" },
+    { "id": "unknown.reentry", "topic": "Re-entry and occupancy guidance", "reason": "needs_product_label_or_sds" },
+    { "id": "unknown.sensitive_people", "topic": "Pets, children, pregnancy, allergies, respiratory or chemical sensitivities, and food-contact guidance", "reason": "needs_product_label_or_sds" },
+    { "id": "unknown.credentials", "topic": "Insurance, licensing, certification, or accreditation claims", "reason": "needs_verified_company_records" },
+    { "id": "unknown.emergency_biohazard", "topic": "Emergency, same-day, body-fluid, or biohazard work", "reason": "not_approved_for_autonomous_offer" },
+    { "id": "unknown.guarantees", "topic": "Guarantees and refunds", "reason": "needs_owner_decision" },
+    { "id": "unknown.payments", "topic": "Payment methods and deposits", "reason": "needs_owner_decision_and_system" },
+    { "id": "unknown.phone", "topic": "Customer-facing phone number", "reason": "not_provided" }
+  ],
+  "prohibitedClaims": [
+    "Percentage efficacy or kill claims",
+    "Claims about named pathogens, diseases, outbreaks, or illness prevention",
+    "Hospital-grade claims",
+    "EPA-approved shorthand claims",
+    "Non-toxic, chemical-free, completely safe, pet-safe, child-safe, or food-safe absolutes",
+    "Medical or health outcome promises",
+    "Sterilizes or sterile claims",
+    "Unverified certification, license, regulatory, insurance, or accreditation claims",
+    "No-residue, trace-free, or material-compatibility claims without actual product or process support"
+  ],
+  "escalationResponse": "That depends on the specific product, surface, site, and approved procedure, so I do not want to guess. I can collect the minimum details and ask the Zero Trace team to confirm it. You can also contact support@zerotraceusa.com."
+}
