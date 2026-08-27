@@ -1,6 +1,10 @@
 {
   "name": "zero-trace-solutions",
   "private": true,
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check api/*.js"
+  },
   "dependencies": {
     "googleapis": "^144.0.0"
   }
