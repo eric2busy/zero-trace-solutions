@@ -130,6 +130,24 @@ test('malformed concierge input returns 400', async () => {
   assert.match(res.body.error, /latest message|messages array/i);
 });
 
+test('missing provider configuration uses human customer language', async (t) => {
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalLog = console.info;
+  t.after(() => {
+    console.info = originalLog;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+  });
+  delete process.env.OPENAI_API_KEY;
+  console.info = () => {};
+  const req = { method: 'POST', headers: {}, body: { messages: [{ role: 'user', text: 'How does pricing work?' }] } };
+  const res = mockResponse();
+  await handler(req, res);
+  assert.equal(res.statusCode, 503);
+  assert.match(res.body.error, /temporarily unavailable/i);
+  assert.doesNotMatch(res.body.error, /\bAI\b|assistant|bot|concierge/i);
+});
+
 test('upstream model failure fails closed and returns escalation metadata', async (t) => {
   const originalFetch = global.fetch;
   const originalKey = process.env.OPENAI_API_KEY;
@@ -197,11 +215,15 @@ test('prompt injection is refused without exposing policy details', async () => 
   assert.doesNotMatch(result.responseText, /Bearer|sk-/i);
 });
 
-test('mobile concierge hands actions to the existing lead and booking endpoints', () => {
-  const html = fs.readFileSync(path.join(__dirname, '..', 'concierge.html'), 'utf8');
-  assert.match(html, /Automated · approved knowledge only/);
-  assert.match(html, /fetch\('\/api\/leads'/);
-  assert.match(html, /fetch\(`\/api\/availability\?/);
-  assert.match(html, /fetch\('\/api\/book'/);
-  assert.doesNotMatch(html, /NOTION_TOKEN|GOOGLE_PRIVATE_KEY|OPENAI_API_KEY/);
+test('site-wide talk overlay hands actions to existing lead and booking endpoints', () => {
+  const script = fs.readFileSync(path.join(__dirname, '..', 'assets', 'talk-to-zero-trace.js'), 'utf8');
+  const pages = ['index.html', 'about.html', 'book.html', 'contact.html', 'faq.html', 'privacy.html', 'terms.html']
+    .map((file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8'));
+  assert.match(script, /fetch\('\/api\/leads'/);
+  assert.match(script, /fetch\(`\/api\/availability\?/);
+  assert.match(script, /fetch\('\/api\/book'/);
+  assert.match(script, /Talk to Zero Trace/);
+  assert.ok(pages.every((html) => html.includes('/assets/talk-to-zero-trace.js')));
+  assert.doesNotMatch(`${script}\n${pages.join('\n')}`, /NOTION_TOKEN|GOOGLE_PRIVATE_KEY|OPENAI_API_KEY/);
+  assert.doesNotMatch(pages.join('\n'), /AI Concierge|AI concierge|Ask AI|Ask the AI|Concierge/);
 });

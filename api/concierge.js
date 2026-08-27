@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     logEvent({ event: 'configuration_failure', route: 'concierge', reason: 'missing_openai_api_key' });
-    return json(res, 503, { error: 'The automated concierge is temporarily unavailable. Please email support@zerotraceusa.com.' }, origin);
+    return json(res, 503, { error: 'This answer service is temporarily unavailable. Please email support@zerotraceusa.com.' }, origin);
   }
 
   const requestId = randomUUID();
