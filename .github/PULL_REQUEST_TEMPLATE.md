@@ -33,13 +33,18 @@ Tests and results:
 
 - [ ] No secret, credential, or material customer data is committed.
 - [ ] The diff contains no unrelated changes.
-- [ ] Production deployment is a separate action and has **not** been performed by this PR.
+- [ ] READY Preview/checks are verification evidence only; they do **not** authorize merge or Production.
+- [ ] This PR has not been merged or manually deployed to Production by the worker.
 - [ ] Consequential changes are identified below and will not be merged without explicit owner approval.
 - [ ] Required approval links are recorded below, or this PR requires only standard human review.
+
+Vercel release coupling: The current Git integration deploys `main` to Production automatically. Until an owner changes that external setting, an owner merge is the practical Production gate. For a consequential PR, the owner approval record must identify this PR/commit and state: `Approved to merge; I acknowledge this merge triggers the Production deployment.`
 
 Consequence level: Low / Medium / High
 
 Required approvals and links: Standard PR review / describe
+
+Owner production verification after merge: N/A / describe the owner-controlled check and rollback trigger
 
 ## Worker handoff
 

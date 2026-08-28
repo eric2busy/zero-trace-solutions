@@ -60,6 +60,14 @@ Owner approval is required before:
 
 Workers never self-approve. Unless the issue explicitly grants narrower merge authority consistent with company policy, leave the PR in `Review` for a human. Do not add or enable auto-merge, auto-deploy, or branch-protection bypasses.
 
+## Release gate and Vercel coupling
+
+A READY Vercel Preview is verification evidence only. It is never authorization to merge, deploy, or promote a change.
+
+This repository's current Vercel Git integration creates a Production deployment automatically when a commit reaches `main`. Consequently, while that external setting remains in place, merging to `main` is the practical Production gate. Before an owner merges any consequential PR, they must explicitly approve that exact PR/commit **and acknowledge that the merge will trigger Production**. A prior Preview approval, a passing check, or a generic approval is not enough.
+
+Workers stop after the requested Preview reaches READY and the PR is in `Review`. They must not merge, trigger a Production deployment, change GitHub/Vercel settings, or infer owner authorization. Any change to make Production independently promotable is itself an owner-approved external configuration task.
+
 ## Phase 1 priority
 
 Implement `company/workflows/lead-to-service.yml`.
