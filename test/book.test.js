@@ -122,7 +122,16 @@ test('finalizes Notion, preserves Calendar timing, sends emails, and returns suc
   await handler(request(), res);
 
   assert.equal(res.statusCode, 200);
-  assert.deepEqual(res.body, { ok: true, calendarEventId: 'calendar-event-id', start: START, end: END });
+  assert.deepEqual(res.body, {
+    ok: true,
+    calendarEventId: 'calendar-event-id',
+    start: START,
+    end: END,
+    emailDelivery: {
+      customer: { sent: true, state: 'sent', reason: 'accepted', providerStatus: 200 },
+      internal: { sent: true, state: 'sent', reason: 'accepted', providerStatus: 200 },
+    },
+  });
   assert.deepEqual(calendar.calls.inserts[0].requestBody.start, { dateTime: START, timeZone: TIME_ZONE });
   assert.deepEqual(calendar.calls.inserts[0].requestBody.end, { dateTime: END, timeZone: TIME_ZONE });
   assert.equal(calendar.calls.deletes.length, 0);
@@ -136,6 +145,25 @@ test('finalizes Notion, preserves Calendar timing, sends emails, and returns suc
   });
   assert.deepEqual(notionBody.properties.Status, { select: { name: 'Scheduled' } });
   assert.equal(fetchCalls.filter(({ url }) => url === 'https://api.resend.com/emails').length, 2);
+});
+
+test('keeps a finalized booking successful when email delivery fails', async () => {
+  const calendar = calendarMock();
+  global.fetch = async (url) => {
+    if (url.startsWith('https://api.notion.com/')) return fetchResponse(true);
+    throw new Error('network unavailable');
+  };
+  const handler = loadHandler(calendar);
+  const res = response();
+
+  await handler(request(), res);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body.emailDelivery, {
+    customer: { sent: false, state: 'failed', reason: 'request_failed' },
+    internal: { sent: false, state: 'failed', reason: 'request_failed' },
+  });
+  assert.equal(calendar.calls.deletes.length, 0);
 });
 
 test('rolls back Calendar and sends no email when Notion rejects persistence', async () => {
