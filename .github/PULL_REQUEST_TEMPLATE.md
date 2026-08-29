@@ -39,9 +39,15 @@ Tests and results:
 - [ ] The `owner-production-approval` check passes for the exact current PR head before merge.
 - [ ] Required approval links are recorded below, or this PR requires only standard human review.
 
-Vercel release coupling: The current Git integration deploys `main` to Production automatically. An owner merge is therefore the Production release action. Workers stop at READY Preview and do not merge. A new commit after owner review invalidates the prior automated owner gate and requires a fresh owner approval on the new head.
+Vercel release coupling: The current Git integration deploys `main` to Production automatically. An owner merge is therefore the Production release action. Workers stop at READY Preview and do not merge. A new commit resets the automated gate and requires a fresh owner approval comment for the new head.
 
-For a consequential PR, the owner approval record must identify this PR/commit and state: `Approved to merge; I acknowledge this merge triggers the Production deployment.`
+For a consequential PR, the owner must comment exactly:
+
+```text
+OWNER_PRODUCTION_APPROVED: <current PR head SHA>
+```
+
+That comment opens only the check on the named head. A pushed commit has a new SHA and is automatically marked failing until the owner makes a new exact-head comment.
 
 Consequence level: Low / Medium / High
 
