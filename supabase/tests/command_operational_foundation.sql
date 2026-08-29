@@ -1,0 +1,32 @@
+begin;
+select plan(26);
+
+select has_table('public', 'actors');
+select has_table('public', 'activity_events');
+select has_table('public', 'approvals');
+select has_table('public', 'integration_outbox');
+select col_is_pk('public', 'actors', 'id');
+select col_is_pk('public', 'activity_events', 'id');
+select col_is_pk('public', 'approvals', 'id');
+select col_is_pk('public', 'integration_outbox', 'id');
+select col_not_null('public', 'activity_events', 'actor_id');
+select col_not_null('public', 'approvals', 'requested_by_actor_id');
+select col_not_null('public', 'integration_outbox', 'idempotency_key');
+select col_not_null('public', 'integration_outbox', 'correlation_id');
+select row_security_active('public.actors');
+select row_security_active('public.activity_events');
+select row_security_active('public.approvals');
+select row_security_active('public.integration_outbox');
+select policies_are('public', 'actors', array['No direct actor access']);
+select policies_are('public', 'activity_events', array['No direct activity access']);
+select policies_are('public', 'approvals', array['No direct approval access']);
+select policies_are('public', 'integration_outbox', array['No direct outbox access']);
+select table_privs_are('public', 'actors', 'authenticated', array[]::text[]);
+select table_privs_are('public', 'activity_events', 'authenticated', array[]::text[]);
+select table_privs_are('public', 'approvals', 'authenticated', array[]::text[]);
+select table_privs_are('public', 'integration_outbox', 'authenticated', array[]::text[]);
+select has_index('public', 'approvals', 'approvals_requester_idempotency_key_idx');
+select has_index('public', 'integration_outbox', 'integration_outbox_destination_idempotency_key_idx');
+
+select * from finish();
+rollback;
