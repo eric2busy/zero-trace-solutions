@@ -12,10 +12,15 @@ function setTestEnv() {
   process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_test';
 }
 
-test('Command sign-in rejects an account without a Command app_metadata role', async () => {
+test('Command sign-in rejects an account without a fresh Command app_metadata role', async () => {
   setTestEnv();
   const originalFetch = global.fetch;
-  global.fetch = async () => ({ ok: true, json: async () => ({ access_token: 'access', refresh_token: 'refresh', expires_in: 3600, user: { app_metadata: { command_role: 'ai_service' } } }) });
+  global.fetch = async url => ({
+    ok: true,
+    json: async () => url.endsWith('/auth/v1/user')
+      ? { app_metadata: { command_role: 'ai_service' } }
+      : { access_token: 'access', refresh_token: 'refresh', expires_in: 3600 },
+  });
   const res = response();
   await commandAuth({ method: 'POST', body: { email: 'agent@example.test', password: 'not-a-real-password' }, headers: {} }, res);
   global.fetch = originalFetch;
@@ -24,10 +29,15 @@ test('Command sign-in rejects an account without a Command app_metadata role', a
   assert.equal(res.headers['Set-Cookie'], undefined);
 });
 
-test('Command sign-in creates Secure, HttpOnly access and refresh cookies only for an interactive role', async () => {
+test('Command sign-in authorizes from the fresh user record and creates Secure, HttpOnly cookies', async () => {
   setTestEnv();
   const originalFetch = global.fetch;
-  global.fetch = async () => ({ ok: true, json: async () => ({ access_token: 'access', refresh_token: 'refresh', expires_in: 3600, user: { app_metadata: { command_role: 'owner' } } }) });
+  global.fetch = async url => ({
+    ok: true,
+    json: async () => url.endsWith('/auth/v1/user')
+      ? { app_metadata: { command_role: 'owner' } }
+      : { access_token: 'access', refresh_token: 'refresh', expires_in: 3600, user: { app_metadata: { command_role: 'ai_service' } } },
+  });
   const res = response();
   await commandAuth({ method: 'POST', body: { email: 'owner@example.test', password: 'not-a-real-password' }, headers: {} }, res);
   global.fetch = originalFetch;
@@ -48,7 +58,7 @@ test('invite acceptance updates a password only after role authorization and est
     calls.push({ url, options });
     if (url.endsWith('/auth/v1/user') && options.method !== 'PUT') return { ok: true, json: async () => ({ app_metadata: { command_role: 'admin' } }) };
     if (url.endsWith('/auth/v1/user')) return { ok: true, json: async () => ({}) };
-    return { ok: true, json: async () => ({ access_token: 'new-access', refresh_token: 'new-refresh', expires_in: 3600, user: { app_metadata: { command_role: 'admin' } }) };
+    return { ok: true, json: async () => ({ access_token: 'new-access', refresh_token: 'new-refresh', expires_in: 3600 }) };
   };
   const res = response();
   await commandAuth({ method: 'POST', query: { action: 'accept-invite' }, body: { access_token: 'invite-access', refresh_token: 'invite-refresh', password: 'long-enough-password' }, headers: {} }, res);
