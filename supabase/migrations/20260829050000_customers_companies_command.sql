@@ -27,7 +27,8 @@ create table public.customers (
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
   created_by uuid references public.actors(id) on delete restrict,
   updated_by uuid references public.actors(id) on delete restrict,
-  version integer not null default 1 check (version > 0)
+  version integer not null default 1 check (version > 0),
+  unique (id, organization_id)
 );
 
 -- A contact belongs to exactly one customer or organization. Raw values are PII;
@@ -51,6 +52,21 @@ create table public.customer_contacts (
   unique (organization_id, kind, normalized_value)
 );
 
+-- PostgreSQL supplies the installed IANA timezone database. Keep the validation
+-- in a stable function so the table constraint can safely consult that catalog.
+create function public.command_is_iana_timezone(candidate text)
+returns boolean
+language sql
+stable
+strict
+set search_path = pg_catalog
+as $$
+  select candidate = 'UTC' or (
+    candidate ~ '^[A-Za-z][A-Za-z0-9._+-]*(/[A-Za-z][A-Za-z0-9._+-]*)+$'
+    and exists (select 1 from pg_timezone_names where name = candidate)
+  );
+$$;
+
 create table public.service_locations (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid references public.organizations(id) on delete restrict,
@@ -62,14 +78,17 @@ create table public.service_locations (
   region text not null check (char_length(region) between 1 and 120),
   postal_code text not null check (char_length(postal_code) between 1 and 32),
   country_code text not null default 'US' check (country_code ~ '^[A-Z]{2}$'),
-  timezone text,
+  timezone text check (timezone is null or public.command_is_iana_timezone(timezone)),
   status public.command_party_status not null default 'active',
   notion_page_id text unique,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
   created_by uuid references public.actors(id) on delete restrict,
   updated_by uuid references public.actors(id) on delete restrict,
   version integer not null default 1 check (version > 0),
-  check (organization_id is not null or customer_id is not null)
+  check (organization_id is not null or customer_id is not null),
+  -- When both owners are supplied, they must describe the same relationship.
+  foreign key (customer_id, organization_id)
+    references public.customers (id, organization_id) on delete restrict
 );
 
 create unique index customer_contacts_primary_customer_kind_idx on public.customer_contacts (customer_id, kind)
@@ -103,4 +122,5 @@ comment on table public.organizations is 'Canonical organization identity. No cu
 comment on table public.customers is 'Canonical customer identity. No current production flow reads or writes this table.';
 comment on table public.customer_contacts is 'PII-bearing contact points. Browser access is denied; future service APIs must redact logs.';
 comment on table public.service_locations is 'Service-site addresses. Calendar remains schedule authority until a separately approved cutover.';
+comment on function public.command_is_iana_timezone(text) is 'Validates UTC or an installed IANA timezone name for future Scheduling use.';
 comment on schema public is 'Command authorization remains in trusted auth app metadata and command_roles; never use user_metadata for authorization.';

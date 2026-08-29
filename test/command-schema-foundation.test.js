@@ -42,5 +42,8 @@ test('customers and companies migration is scoped, private, and covered by pgTAP
   assert.match(crmMigration, /revoke all on table public\.organizations, public\.customers, public\.customer_contacts, public\.service_locations from anon, authenticated/);
   assert.match(crmMigration, /raw_app_meta_data|app metadata|app_metadata/i);
   assert.doesNotMatch(crmMigration, /create table public\.(leads|bookings|jobs|payments) \(/);
-  assert.match(crmTest, /select plan\(26\)/);
+  assert.match(crmTest, /select plan\(34\)/);
+  assert.match(crmMigration, /foreign key \(customer_id, organization_id\)/);
+  assert.match(crmMigration, /command_is_iana_timezone/);
+  assert.match(crmTest, /'a service location rejects a customer from another organization'/);
 });

@@ -11,7 +11,7 @@ Supabase will become the canonical store only after a separately approved applic
 - An organization is optional; individual customers do not require one.
 - A customer may belong to one organization.
 - A contact belongs to exactly one customer or organization and is typed as email, phone, or other. It carries raw and normalized values so future writes can deduplicate without using mutable user metadata.
-- A service location belongs to a customer, an organization, or both. It stores a business address and optional IANA timezone; it does not create or change a Calendar event.
+- A service location belongs to a customer, an organization, or both. When both are present, the customer must belong to that organization. It stores a business address and an optional timezone validated against PostgreSQL's installed IANA timezone database; it does not create or change a Calendar event.
 - Each mutable entity has attribution, timestamps, and optimistic versioning through the existing touch trigger.
 
 ## Access and API boundary
