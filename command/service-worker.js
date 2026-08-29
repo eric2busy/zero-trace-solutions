@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zero-trace-command-v1';
+const CACHE_NAME = 'zero-trace-command-v2';
 const COMMAND_SHELL = [
   '/command/manifest.webmanifest',
   '/command/icon-192.png',
