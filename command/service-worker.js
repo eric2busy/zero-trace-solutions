@@ -1,11 +1,10 @@
-const CACHE_NAME = 'zero-trace-command-v2';
+const CACHE_NAME = 'zero-trace-command-v3';
 const COMMAND_SHELL = [
-  '/command/manifest.webmanifest',
-  '/command/icon-192.png',
-  '/command/icon-512.png',
-  '/command/icon-512-maskable.png',
-  '/command/apple-touch-icon.png',
-  '/command/icon.svg'
+  '/command/manifest.webmanifest?v=approved-20260829',
+  '/command/icon-192.png?v=approved-20260829',
+  '/command/icon-512.png?v=approved-20260829',
+  '/command/icon-512-maskable.png?v=approved-20260829',
+  '/command/apple-touch-icon.png?v=approved-20260829'
 ];
 
 self.addEventListener('install', event => {
