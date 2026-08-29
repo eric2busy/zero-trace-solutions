@@ -1,1 +1,78 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Sign in — Zero Trace Command</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#eef6ff;color:#262626;font-family:system-ui,sans-serif}.card{width:min(390px,calc(100% - 40px));background:#fff;border:1px solid #d3d3d3;border-radius:22px;padding:30px;box-shadow:0 16px 45px #26262614}h1{margin:0 0 8px;font-size:28px}p{color:#6c6c6c;line-height:1.5;font-size:14px}label{display:grid;gap:6px;margin-top:16px;font-size:13px;font-weight:700}input{border:1px solid #bbb;border-radius:10px;padding:12px;font:inherit}button{width:100%;border:0;border-radius:999px;background:#0083f5;color:#fff;padding:13px;margin-top:22px;font:inherit;font-weight:700}.notice{display:none;background:#fff4df;color:#805000;border-radius:10px;padding:10px;font-size:13px}.notice.show{display:block}</style></head><body><main class="card"><img src="../../logo.svg" alt="Zero Trace Solutions" height="34"><h1>Command access</h1><p>Sign in with an Owner, Admin, Operator, or Technician account. Access is by invitation only.</p><p class="notice" id="notice" role="alert"></p><form method="post" action="/api/command-auth"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">Sign in</button></form></main><script>const e=new URLSearchParams(location.search).get('error'),m={invalid:'Enter a valid email and password.',access:'This account is not authorized for Command.',unavailable:'Sign-in is temporarily unavailable.'}[e];if(m){const n=document.getElementById('notice');n.textContent=m;n.className='notice show'}</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Sign in — Zero Trace Command</title>
+  <style>
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#eef6ff;color:#262626;font-family:system-ui,sans-serif}
+    .card{width:min(390px,calc(100% - 40px));background:#fff;border:1px solid #d3d3d3;border-radius:22px;padding:30px;box-shadow:0 16px 45px #26262614}
+    h1{margin:0 0 8px;font-size:28px}p{color:#6c6c6c;line-height:1.5;font-size:14px}
+    label{display:grid;gap:6px;margin-top:16px;font-size:13px;font-weight:700}
+    input{border:1px solid #bbb;border-radius:10px;padding:12px;font:inherit}button{width:100%;border:0;border-radius:999px;background:#0083f5;color:#fff;padding:13px;margin-top:22px;font:inherit;font-weight:700}
+    .notice{display:none;background:#fff4df;color:#805000;border-radius:10px;padding:10px;font-size:13px}.notice.show{display:block}.hidden{display:none}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img src="../../logo.svg" alt="Zero Trace Solutions" height="34">
+    <h1>Command access</h1>
+    <p>Sign in with an Owner, Admin, Operator, or Technician account. Access is by invitation only.</p>
+    <p class="notice" id="notice" role="alert"></p>
+    <form id="sign-in" method="post" action="/api/command-auth">
+      <label>Email<input name="email" type="email" autocomplete="email" required></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Sign in</button>
+    </form>
+    <form id="invite" class="hidden">
+      <p>Set a strong password to activate your invited Command account.</p>
+      <label>New password<input id="invite-password" type="password" autocomplete="new-password" minlength="12" required></label>
+      <label>Confirm password<input id="invite-confirm" type="password" autocomplete="new-password" minlength="12" required></label>
+      <button type="submit">Activate Command access</button>
+    </form>
+  </main>
+  <script>
+    const notice = document.getElementById('notice');
+    const showNotice = message => { notice.textContent = message; notice.className = 'notice show'; };
+    const error = new URLSearchParams(location.search).get('error');
+    const messages = { invalid:'Enter a valid email and password.', access:'This account is not authorized for Command.', unavailable:'Sign-in is temporarily unavailable.' };
+    if (messages[error]) showNotice(messages[error]);
+
+    const fragment = new URLSearchParams(location.hash.slice(1));
+    const accessToken = fragment.get('access_token');
+    const refreshToken = fragment.get('refresh_token');
+    const inviteType = fragment.get('type') || new URLSearchParams(location.search).get('type');
+    if (accessToken && refreshToken && inviteType === 'invite') {
+      history.replaceState(null, '', location.pathname);
+      document.getElementById('sign-in').classList.add('hidden');
+      document.getElementById('invite').classList.remove('hidden');
+    }
+
+    document.getElementById('invite').addEventListener('submit', async event => {
+      event.preventDefault();
+      const password = document.getElementById('invite-password').value;
+      const confirmation = document.getElementById('invite-confirm').value;
+      if (!accessToken || !refreshToken || password.length < 12 || password !== confirmation) {
+        return showNotice('Use matching passwords with at least 12 characters.');
+      }
+      const button = event.currentTarget.querySelector('button');
+      button.disabled = true;
+      try {
+        const response = await fetch('/api/command-auth?action=accept-invite', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          credentials:'same-origin',
+          body:JSON.stringify({access_token:accessToken,refresh_token:refreshToken,password}),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error('invite');
+        location.assign(result.redirectTo || '/command/');
+      } catch {
+        button.disabled = false;
+        showNotice('We could not activate this invite. Ask an Owner to confirm your access and send a new invitation if needed.');
+      }
+    });
+  </script>
+</body>
+</html>
