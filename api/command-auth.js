@@ -60,18 +60,33 @@ async function acceptInvite(req, res) {
   return json(res, 200, { ok: true, redirectTo: '/command/' }, sessionCookies(session));
 }
 
+async function requestRecovery(req, res) {
+  const { email } = req.body || {};
+  if (typeof email === 'string' && email.length <= 320) {
+    await authRequest('/auth/v1/recover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  }
+  return json(res, 200, { ok: true });
+}
+
 module.exports = async function commandAuth(req, res) {
   const action = req.query?.action;
   if (req.method === 'GET' && action === 'logout') {
     return redirect(res, '/command/login/', clearSessionCookies());
   }
   if (!configured()) {
-    if (action === 'accept-invite') return json(res, 503, { error: 'unavailable' });
+    if (action === 'accept-invite' || action === 'request-recovery') return json(res, 503, { error: 'unavailable' });
     res.statusCode = 503;
     return res.end('Command authentication is not configured.');
   }
   if (req.method === 'POST' && action === 'accept-invite') {
     try { return await acceptInvite(req, res); } catch { return json(res, 503, { error: 'unavailable' }); }
+  }
+  if (req.method === 'POST' && action === 'request-recovery') {
+    try { return await requestRecovery(req, res); } catch { return json(res, 200, { ok: true }); }
   }
   if (req.method !== 'POST') {
     res.statusCode = 405;
