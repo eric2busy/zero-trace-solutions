@@ -4,10 +4,17 @@ on:
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
   issue_comment:
-    types: [created]
+    types: [created, edited, deleted]
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: 'Pull request number to reevaluate'
+        required: true
+        type: string
 
 permissions:
   contents: read
+  issues: read
   pull-requests: read
   statuses: write
 
@@ -25,35 +32,51 @@ jobs:
             const approvalPrefix = 'OWNER_PRODUCTION_APPROVED:';
 
             let pr;
-            let approvalComment;
-
             if (context.eventName === 'pull_request_target') {
               pr = context.payload.pull_request;
-            } else {
+            } else if (context.eventName === 'issue_comment') {
               const issue = context.payload.issue;
               if (!issue?.pull_request) {
                 core.notice('Comment is not on a pull request; nothing to do.');
                 return;
               }
-
-              approvalComment = context.payload.comment;
-              if (approvalComment.user?.login !== requiredOwner) {
-                core.notice('Only the configured repository owner can open this gate.');
-                return;
-              }
-
               const response = await github.rest.pulls.get({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: issue.number,
               });
               pr = response.data;
+            } else {
+              const pullNumber = context.payload.inputs.pull_request_number;
+              if (!/^[1-9]\d*$/.test(pullNumber)) {
+                core.setFailed('pull_request_number must be a positive integer.');
+                return;
+              }
+              const response = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: Number(pullNumber),
+              });
+              pr = response.data;
+            }
+
+            if (pr.state !== 'open') {
+              core.notice('Pull request is not open; nothing to gate.');
+              return;
             }
 
             const headSha = pr.head.sha;
             const expectedApproval = `${approvalPrefix} ${headSha}`;
-            const approved = Boolean(approvalComment) &&
-              approvalComment.body.trim() === expectedApproval;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              per_page: 100,
+            });
+            const approved = comments.some((comment) =>
+              comment.user?.login === requiredOwner &&
+              comment.body.trim() === expectedApproval
+            );
 
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
