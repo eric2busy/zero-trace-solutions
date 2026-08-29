@@ -36,9 +36,18 @@ Tests and results:
 - [ ] READY Preview/checks are verification evidence only; they do **not** authorize merge or Production.
 - [ ] This PR has not been merged or manually deployed to Production by the worker.
 - [ ] Consequential changes are identified below and will not be merged without explicit owner approval.
+- [ ] The `owner-production-approval` check passes for the exact current PR head before merge.
 - [ ] Required approval links are recorded below, or this PR requires only standard human review.
 
-Vercel release coupling: The current Git integration deploys `main` to Production automatically. Until an owner changes that external setting, an owner merge is the practical Production gate. For a consequential PR, the owner approval record must identify this PR/commit and state: `Approved to merge; I acknowledge this merge triggers the Production deployment.`
+Vercel release coupling: The current Git integration deploys `main` to Production automatically. An owner merge is therefore the Production release action. Workers stop at READY Preview and do not merge. A new commit resets the automated gate and requires a fresh owner approval comment for the new head.
+
+For a consequential PR, the owner must comment exactly:
+
+```text
+OWNER_PRODUCTION_APPROVED: <current PR head SHA>
+```
+
+That comment opens only the check on the named head. A pushed commit has a new SHA and is automatically marked failing until the owner makes a new exact-head comment.
 
 Consequence level: Low / Medium / High
 

@@ -1,0 +1,78 @@
+name: Owner Production Gate
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+
+jobs:
+  owner-approval:
+    name: owner-production-approval
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set the exact-head owner Production gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const requiredOwner = 'eric2busy';
+            const contextName = 'owner-production-approval';
+            const approvalPrefix = 'OWNER_PRODUCTION_APPROVED:';
+
+            let pr;
+            let approvalComment;
+
+            if (context.eventName === 'pull_request_target') {
+              pr = context.payload.pull_request;
+            } else {
+              const issue = context.payload.issue;
+              if (!issue?.pull_request) {
+                core.notice('Comment is not on a pull request; nothing to do.');
+                return;
+              }
+
+              approvalComment = context.payload.comment;
+              if (approvalComment.user?.login !== requiredOwner) {
+                core.notice('Only the configured repository owner can open this gate.');
+                return;
+              }
+
+              const response = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: issue.number,
+              });
+              pr = response.data;
+            }
+
+            const headSha = pr.head.sha;
+            const expectedApproval = `${approvalPrefix} ${headSha}`;
+            const approved = Boolean(approvalComment) &&
+              approvalComment.body.trim() === expectedApproval;
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: headSha,
+              state: approved ? 'success' : 'failure',
+              context: contextName,
+              description: approved
+                ? 'Owner approved this exact PR head for Production.'
+                : 'Awaiting an exact-head owner approval.',
+              target_url: pr.html_url,
+            });
+
+            if (!approved) {
+              core.setFailed(
+                `Production gate closed for ${headSha}. ` +
+                `@${requiredOwner} must comment exactly: ${expectedApproval}`
+              );
+              return;
+            }
+
+            core.info(`Production gate open for exact head ${headSha}.`);
