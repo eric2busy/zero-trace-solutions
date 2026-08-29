@@ -34,6 +34,10 @@ async function signIn(email, password) {
   return response.ok && session?.access_token && session?.refresh_token ? session : null;
 }
 
+async function freshAuthorizedUser(session) {
+  return session?.access_token ? fetchUser(session.access_token) : null;
+}
+
 async function acceptInvite(req, res) {
   const { access_token: accessToken, refresh_token: refreshToken, password } = req.body || {};
   if (typeof accessToken !== 'string' || typeof refreshToken !== 'string' || typeof password !== 'string' || password.length < 12 || password.length > 256) {
@@ -51,9 +55,8 @@ async function acceptInvite(req, res) {
   if (!update.ok) return json(res, 400, { error: 'password_update_failed' });
 
   const session = await refreshSession(refreshToken);
-  if (!session || !commandRole(session.user || await fetchUser(session.access_token))) {
-    return json(res, 403, { error: 'access_denied' });
-  }
+  const refreshedUser = await freshAuthorizedUser(session);
+  if (!refreshedUser || !commandRole(refreshedUser)) return json(res, 403, { error: 'access_denied' });
   return json(res, 200, { ok: true, redirectTo: '/command/' }, sessionCookies(session));
 }
 
@@ -82,7 +85,8 @@ module.exports = async function commandAuth(req, res) {
 
   try {
     const session = await signIn(email, password);
-    if (!session || !commandRole(session.user)) return redirect(res, '/command/login/?error=access');
+    const user = await freshAuthorizedUser(session);
+    if (!user || !commandRole(user)) return redirect(res, '/command/login/?error=access');
     return redirect(res, '/command/', sessionCookies(session));
   } catch {
     return redirect(res, '/command/login/?error=unavailable');
