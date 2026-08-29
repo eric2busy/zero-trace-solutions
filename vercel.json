@@ -1,3 +1,8 @@
 {
-  "rewrites": []
+  "functions": { "api/command.js": { "includeFiles": "command/index.html" } },
+  "routes": [
+    { "src": "/command/?", "dest": "/api/command" },
+    { "src": "/command/index\\.html", "dest": "/api/command" },
+    { "handle": "filesystem" }
+  ]
 }

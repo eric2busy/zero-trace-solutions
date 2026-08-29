@@ -1,6 +1,5 @@
 const CACHE_NAME = 'zero-trace-command-v1';
 const COMMAND_SHELL = [
-  '/command/',
   '/command/manifest.webmanifest',
   '/command/icon-192.png',
   '/command/icon-512.png',
@@ -24,14 +23,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
-  const isCommandNavigation = request.method === 'GET'
-    && request.mode === 'navigate'
-    && url.origin === self.location.origin
-    && url.pathname.startsWith('/command/');
-
-  // This worker's scope is /command/, but retain an explicit guard: no APIs,
-  // public-site pages, or non-navigation resources are intercepted.
-  if (!isCommandNavigation) return;
-
-  event.respondWith(fetch(request).catch(() => caches.match('/command/')));
+  // Authenticated HTML and the login page are never cached. This worker keeps
+  // install metadata offline without retaining an authenticated Command page.
+  if (request.method !== 'GET' || request.mode === 'navigate' || url.origin !== self.location.origin || url.pathname.includes('/login/')) return;
 });

@@ -1,0 +1,13 @@
+begin;
+select plan(9);
+select policies_are('public', 'profiles', array['Command users can read their own profile', 'Command users can update their own display name']);
+select policies_are('public', 'command_roles', array['No direct command role access']);
+select row_security_active('public.profiles');
+select row_security_active('public.command_roles');
+select table_privs_are('public', 'profiles', 'anon', array[]::text[]);
+select table_privs_are('public', 'command_roles', 'anon', array[]::text[]);
+select table_privs_are('public', 'command_roles', 'authenticated', array[]::text[]);
+select function_privs_are('public', 'handle_new_command_user', array[]::text[]);
+select has_index('public', 'command_roles', 'command_roles_assigned_by_idx');
+select * from finish();
+rollback;

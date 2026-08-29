@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Sign in — Zero Trace Command</title>
+  <style>
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#eef6ff;color:#262626;font-family:system-ui,sans-serif}
+    .card{width:min(390px,calc(100% - 40px));background:#fff;border:1px solid #d3d3d3;border-radius:22px;padding:30px;box-shadow:0 16px 45px #26262614}
+    h1{margin:0 0 8px;font-size:28px}p{color:#6c6c6c;line-height:1.5;font-size:14px}
+    label{display:grid;gap:6px;margin-top:16px;font-size:13px;font-weight:700}
+    input{border:1px solid #bbb;border-radius:10px;padding:12px;font:inherit}button{width:100%;border:0;border-radius:999px;background:#0083f5;color:#fff;padding:13px;margin-top:22px;font:inherit;font-weight:700}
+    .secondary{background:transparent;color:#006cc8;border:0;padding:10px 0;margin:8px 0 0;text-decoration:underline}.notice{display:none;background:#fff4df;color:#805000;border-radius:10px;padding:10px;font-size:13px}.notice.show{display:block}.hidden{display:none}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img src="../../logo.svg" alt="Zero Trace Solutions" height="34">
+    <h1>Command access</h1>
+    <p>Sign in with an Owner, Admin, Operator, or Technician account. Access is by invitation only.</p>
+    <p class="notice" id="notice" role="alert"></p>
+    <form id="sign-in" method="post" action="/api/command-auth">
+      <label>Email<input id="email" name="email" type="email" autocomplete="email" required></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Sign in</button>
+      <button class="secondary" id="recovery-request" type="button">Set or reset password</button>
+    </form>
+    <form id="password-setup" class="hidden">
+      <p id="setup-copy">Set a strong password to activate your Command account.</p>
+      <label>New password<input id="setup-password" type="password" autocomplete="new-password" minlength="12" required></label>
+      <label>Confirm password<input id="setup-confirm" type="password" autocomplete="new-password" minlength="12" required></label>
+      <button type="submit">Set password and continue</button>
+    </form>
+  </main>
+  <script>
+    const notice = document.getElementById('notice');
+    const showNotice = message => { notice.textContent = message; notice.className = 'notice show'; };
+    const error = new URLSearchParams(location.search).get('error');
+    const messages = { invalid:'Enter a valid email and password.', access:'This account is not authorized for Command.', unavailable:'Sign-in is temporarily unavailable.' };
+    if (messages[error]) showNotice(messages[error]);
+
+    const fragment = new URLSearchParams(location.hash.slice(1));
+    const accessToken = fragment.get('access_token');
+    const refreshToken = fragment.get('refresh_token');
+    const flowType = fragment.get('type') || new URLSearchParams(location.search).get('type');
+    const passwordSetup = flowType === 'invite' || flowType === 'recovery';
+    if (accessToken && refreshToken && passwordSetup) {
+      history.replaceState(null, '', location.pathname);
+      document.getElementById('sign-in').classList.add('hidden');
+      document.getElementById('password-setup').classList.remove('hidden');
+      if (flowType === 'recovery') document.getElementById('setup-copy').textContent = 'Choose a new password for your Command account.';
+    }
+
+    document.getElementById('recovery-request').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      if (!email) return showNotice('Enter your email first, then select Set or reset password.');
+      try {
+        await fetch('/api/command-auth?action=request-recovery', {
+          method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify({email}),
+        });
+      } finally {
+        showNotice('If this account is eligible, a password link has been sent.');
+      }
+    });
+
+    document.getElementById('password-setup').addEventListener('submit', async event => {
+      event.preventDefault();
+      const password = document.getElementById('setup-password').value;
+      const confirmation = document.getElementById('setup-confirm').value;
+      if (!accessToken || !refreshToken || password.length < 12 || password !== confirmation) return showNotice('Use matching passwords with at least 12 characters.');
+      const button = event.currentTarget.querySelector('button');
+      button.disabled = true;
+      try {
+        const response = await fetch('/api/command-auth?action=accept-invite', {
+          method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+          body:JSON.stringify({access_token:accessToken,refresh_token:refreshToken,password}),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error('password');
+        location.assign(result.redirectTo || '/command/');
+      } catch {
+        button.disabled = false;
+        showNotice('We could not set this password. Ask an Owner to confirm your access and send a new recovery link if needed.');
+      }
+    });
+  </script>
+</body>
+</html>
