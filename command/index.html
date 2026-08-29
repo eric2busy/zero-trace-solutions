@@ -4,9 +4,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#dfeafc" />
+  <meta name="application-name" content="Zero Trace Command" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="ZT Command" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>Zero Trace Command — Prototype</title>
-  <link rel="icon" href="../logo.svg" type="image/svg+xml" />
+  <title>Zero Trace Command</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <style>
     @font-face{font-family:'Cal Sans';font-style:normal;font-display:swap;font-weight:400;src:url(https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff2) format('woff2')}
@@ -75,6 +82,7 @@
   document.addEventListener('click',event=>{if(!moreMenu.contains(event.target)&&event.target!==more&&!more.contains(event.target))moreMenu.classList.remove('open')});
   const search=document.getElementById('customerSearch'),searchEmpty=document.getElementById('searchEmpty');search.addEventListener('input',()=>{const q=search.value.trim().toLowerCase();let visible=0;document.querySelectorAll('#customerList [data-search]').forEach(row=>{const match=!q||row.dataset.search.includes(q);row.style.display=match?'grid':'none';if(match)visible++});searchEmpty.classList.toggle('visible',visible===0)});
   document.querySelectorAll('[data-demo]').forEach(button=>button.addEventListener('click',()=>showToast(button.dataset.demo==='approve'?'Prototype: approval would be recorded.':'Prototype: rejection would be recorded.')));document.querySelectorAll('[data-demo-toast]').forEach(button=>button.addEventListener('click',()=>showToast(button.dataset.demoToast)));show('today');
+  if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{scope:'./'}).catch(error=>console.warn('Command offline support was unavailable.',error)));
 </script>
 </body>
 </html>

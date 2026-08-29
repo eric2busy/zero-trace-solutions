@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Zero Trace Command</title>
+  <rect width="512" height="512" rx="112" fill="#dfeafc"/>
+  <rect x="28" y="28" width="456" height="456" rx="96" fill="#0083f5"/>
+  <path d="M128 147h256l-172 218h172" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="42"/>
+  <circle cx="384" cy="365" r="21" fill="#dfeafc"/>
+</svg>
