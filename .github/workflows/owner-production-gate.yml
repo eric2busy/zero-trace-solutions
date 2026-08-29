@@ -1,0 +1,54 @@
+name: Owner Production Gate
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  owner-approval:
+    name: owner-production-approval
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require owner approval on current PR head
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = 'eric2busy';
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.setFailed('No pull request context found.');
+              return;
+            }
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            const latestByUser = new Map();
+            for (const review of reviews) {
+              if (!review.user?.login) continue;
+              latestByUser.set(review.user.login, review);
+            }
+
+            const ownerReview = latestByUser.get(owner);
+            const approved = ownerReview?.state === 'APPROVED';
+            const approvedCurrentHead = approved && ownerReview.commit_id === pr.head.sha;
+
+            if (!approvedCurrentHead) {
+              core.setFailed(
+                `Production gate closed. ${owner} must approve this exact PR head (${pr.head.sha}) before merge. ` +
+                'A new commit invalidates the prior approval and requires a fresh owner review.'
+              );
+              return;
+            }
+
+            core.info(`Production gate open: ${owner} approved current head ${pr.head.sha}.`);
