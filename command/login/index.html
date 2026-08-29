@@ -25,11 +25,11 @@
       <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
       <button type="submit">Sign in</button>
     </form>
-    <form id="invite" class="hidden">
-      <p>Set a strong password to activate your invited Command account.</p>
-      <label>New password<input id="invite-password" type="password" autocomplete="new-password" minlength="12" required></label>
-      <label>Confirm password<input id="invite-confirm" type="password" autocomplete="new-password" minlength="12" required></label>
-      <button type="submit">Activate Command access</button>
+    <form id="password-setup" class="hidden">
+      <p id="setup-copy">Set a strong password to activate your Command account.</p>
+      <label>New password<input id="setup-password" type="password" autocomplete="new-password" minlength="12" required></label>
+      <label>Confirm password<input id="setup-confirm" type="password" autocomplete="new-password" minlength="12" required></label>
+      <button type="submit">Set password and continue</button>
     </form>
   </main>
   <script>
@@ -42,17 +42,19 @@
     const fragment = new URLSearchParams(location.hash.slice(1));
     const accessToken = fragment.get('access_token');
     const refreshToken = fragment.get('refresh_token');
-    const inviteType = fragment.get('type') || new URLSearchParams(location.search).get('type');
-    if (accessToken && refreshToken && inviteType === 'invite') {
+    const flowType = fragment.get('type') || new URLSearchParams(location.search).get('type');
+    const passwordSetup = flowType === 'invite' || flowType === 'recovery';
+    if (accessToken && refreshToken && passwordSetup) {
       history.replaceState(null, '', location.pathname);
       document.getElementById('sign-in').classList.add('hidden');
-      document.getElementById('invite').classList.remove('hidden');
+      document.getElementById('password-setup').classList.remove('hidden');
+      if (flowType === 'recovery') document.getElementById('setup-copy').textContent = 'Choose a new password for your Command account.';
     }
 
-    document.getElementById('invite').addEventListener('submit', async event => {
+    document.getElementById('password-setup').addEventListener('submit', async event => {
       event.preventDefault();
-      const password = document.getElementById('invite-password').value;
-      const confirmation = document.getElementById('invite-confirm').value;
+      const password = document.getElementById('setup-password').value;
+      const confirmation = document.getElementById('setup-confirm').value;
       if (!accessToken || !refreshToken || password.length < 12 || password !== confirmation) {
         return showNotice('Use matching passwords with at least 12 characters.');
       }
@@ -66,11 +68,11 @@
           body:JSON.stringify({access_token:accessToken,refresh_token:refreshToken,password}),
         });
         const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.ok) throw new Error('invite');
+        if (!response.ok || !result.ok) throw new Error('password');
         location.assign(result.redirectTo || '/command/');
       } catch {
         button.disabled = false;
-        showNotice('We could not activate this invite. Ask an Owner to confirm your access and send a new invitation if needed.');
+        showNotice('We could not set this password. Ask an Owner to confirm your access and send a new recovery link if needed.');
       }
     });
   </script>
