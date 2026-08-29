@@ -8,6 +8,8 @@ const {
   sessionCookies,
 } = require('./_lib/command-auth');
 
+const COMMAND_LOGIN_URL = 'https://www.zerotraceusa.com/command/login/';
+
 function redirect(res, location, cookies = null) {
   res.statusCode = 303;
   res.setHeader('Location', location);
@@ -66,7 +68,7 @@ async function requestRecovery(req, res) {
     await authRequest('/auth/v1/recover', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, redirect_to: COMMAND_LOGIN_URL }),
     });
   }
   return json(res, 200, { ok: true });
