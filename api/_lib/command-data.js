@@ -84,9 +84,24 @@ async function listCustomers() {
 }
 
 async function listJobs() {
-  const jobs = await readJson('jobs?select=id,kind,status,customer_id,organization_id,service_location_id,title,scheduled_start_at,scheduled_end_at,scheduled_timezone,source_system,completed_at,cancelled_at,created_at,updated_at&order=scheduled_start_at.asc.nullslast,updated_at.desc&limit=100');
+  const jobs = await readJson('jobs?select=id,kind,status,customer_id,organization_id,service_location_id,title,scheduled_start_at,scheduled_end_at,scheduled_timezone,source_system,completed_at,cancelled_at,version,created_at,updated_at&order=scheduled_start_at.asc.nullslast,updated_at.desc&limit=100');
   const assignments = await readJson('job_assignments?select=id,job_id,actor_id,assignment_role,assigned_at,unassigned_at&unassigned_at=is.null&order=assigned_at.desc&limit=200');
   return { jobs, assignments };
+}
+
+function validateJobPatch(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'invalid_payload' };
+  const allowed = new Set(['id', 'title', 'status', 'version']);
+  if (Object.keys(input).some(key => !allowed.has(key))) return { ok: false, error: 'unsupported_field' };
+  const id = String(input.id || '').trim();
+  const title = String(input.title || '').trim().replace(/\s+/g, ' ');
+  const status = String(input.status || '').trim().toLowerCase();
+  const version = Number(input.version);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return { ok: false, error: 'invalid_job_id' };
+  if (title.length < 1 || title.length > 200) return { ok: false, error: 'invalid_title' };
+  if (!['draft', 'scheduled', 'en_route', 'in_progress', 'completed'].includes(status)) return { ok: false, error: 'invalid_status' };
+  if (!Number.isInteger(version) || version < 1) return { ok: false, error: 'invalid_version' };
+  return { ok: true, value: { id, title, status, version } };
 }
 
 async function listApprovals() {
@@ -202,6 +217,51 @@ async function updateCustomer({ authUserId, input }) {
   };
 }
 
+function permittedJobStatusTransition(from, to) {
+  if (from === to) return true;
+  return new Set(['scheduled:en_route', 'scheduled:in_progress', 'scheduled:completed', 'en_route:in_progress', 'en_route:completed', 'in_progress:completed']).has(`${from}:${to}`);
+}
+
+async function updateJob({ authUserId, input }) {
+  const validated = validateJobPatch(input);
+  if (!validated.ok) return { state: 'invalid', error: validated.error };
+  const { id, title, status, version } = validated.value;
+  const actorId = await actorForAuthUser(authUserId);
+  if (!actorId) {
+    const error = new Error('Command actor is not provisioned.');
+    error.code = 'COMMAND_ACTOR_NOT_PROVISIONED';
+    throw error;
+  }
+  const currentRows = await readJson(`jobs?select=id,title,status,completed_at,cancelled_at,updated_by,version&id=eq.${encodeURIComponent(id)}&limit=1`);
+  const current = currentRows?.[0];
+  if (!current) return { state: 'not_found' };
+  if (current.version !== version) return { state: 'stale', currentVersion: current.version };
+  if (current.status === 'cancelled' || !permittedJobStatusTransition(current.status, status)) return { state: 'invalid', error: 'invalid_status_transition' };
+  if (current.title === title && current.status === status) return { state: 'unchanged', job: current };
+
+  const changedFields = [];
+  if (current.title !== title) changedFields.push('title');
+  if (current.status !== status) changedFields.push('status');
+  const patch = { title, status, updated_by: actorId };
+  if (status === 'completed') patch.completed_at = new Date().toISOString();
+  const correlationId = randomUUID();
+  const updatedRows = await writeJson(`jobs?id=eq.${encodeURIComponent(id)}&version=eq.${version}`, 'PATCH', patch);
+  const updated = updatedRows?.[0];
+  if (!updated) return { state: 'stale', currentVersion: current.version };
+  try {
+    await writeJson('activity_events', 'POST', [{ actor_id: actorId, action: 'job.updated', target_type: 'job', target_id: id, authority_level: 'green', correlation_id: correlationId, outcome: 'succeeded', metadata: { changed_fields: changedFields } }], 'return=minimal');
+  } catch (auditError) {
+    try {
+      const rollback = { title: current.title, status: current.status, completed_at: current.completed_at, updated_by: current.updated_by };
+      await writeJson(`jobs?id=eq.${encodeURIComponent(id)}&version=eq.${updated.version}`, 'PATCH', rollback, 'return=minimal');
+    } catch (rollbackError) {
+      const error = new Error('Job audit failed and compensating rollback failed.'); error.code = 'COMMAND_JOB_PARTIAL_MUTATION'; throw error;
+    }
+    const error = new Error('Job audit failed; mutation was rolled back.'); error.code = 'COMMAND_JOB_AUDIT_FAILED'; throw error;
+  }
+  return { state: 'updated', job: updated };
+}
+
 module.exports = {
   configured,
   listActivity,
@@ -213,5 +273,7 @@ module.exports = {
   serverHeaders,
   serverKey,
   updateCustomer,
+  updateJob,
   validateCustomerPatch,
+  validateJobPatch,
 };
