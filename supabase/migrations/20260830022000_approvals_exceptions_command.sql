@@ -66,13 +66,15 @@ create trigger command_reject_approval_decision_delete
   for each row execute procedure public.command_reject_approval_decision_mutation();
 
 -- Fail-closed validity check for a future server-only operations API. This does
--- not execute an action. It only verifies that a Yellow action has a matching,
--- terminal approval that is still valid for the requested target.
+-- not execute an action. It verifies exact action, target, and payload scope.
+-- Approved requests authorize only the originally proposed payload summary;
+-- modified requests authorize only the decision receipt's effective summary.
 create function public.command_approval_allows_action(
   approval_uuid uuid,
   expected_action_type text,
   expected_target_type text,
-  expected_target_id uuid default null
+  expected_target_id uuid,
+  expected_payload_summary jsonb
 )
 returns boolean
 language sql
@@ -82,21 +84,27 @@ as $$
   select exists (
     select 1
     from public.approvals approval
+    join public.approval_decisions decision
+      on decision.approval_id = approval.id
     where approval.id = approval_uuid
       and approval.authority_level = 'yellow'
       and approval.status in ('approved', 'modified')
       and approval.action_type = expected_action_type
       and approval.target_type = expected_target_type
       and approval.target_id is not distinct from expected_target_id
-      and (approval.expires_at is null or approval.expires_at > now())
-      and exists (
-        select 1
-        from public.approval_decisions decision
-        where decision.approval_id = approval.id
-          and decision.decision = approval.status
-          and decision.decided_by_actor_id = approval.decided_by_actor_id
-          and decision.correlation_id = approval.correlation_id
+      and jsonb_typeof(expected_payload_summary) = 'object'
+      and (
+        (approval.status = 'approved'
+          and approval.proposed_payload_summary = expected_payload_summary)
+        or
+        (approval.status = 'modified'
+          and decision.effective_payload_summary is not null
+          and decision.effective_payload_summary = expected_payload_summary)
       )
+      and (approval.expires_at is null or approval.expires_at > now())
+      and decision.decision = approval.status
+      and decision.decided_by_actor_id = approval.decided_by_actor_id
+      and decision.correlation_id = approval.correlation_id
   );
 $$;
 
@@ -104,7 +112,7 @@ alter table public.approval_decisions enable row level security;
 revoke all on table public.approval_decisions from anon, authenticated;
 revoke all on function public.command_validate_approval_decision_insert() from public, anon, authenticated;
 revoke all on function public.command_reject_approval_decision_mutation() from public, anon, authenticated;
-revoke all on function public.command_approval_allows_action(uuid, text, text, uuid) from public, anon, authenticated;
+revoke all on function public.command_approval_allows_action(uuid, text, text, uuid, jsonb) from public, anon, authenticated;
 
 create policy "No direct approval decision access"
   on public.approval_decisions as restrictive for all to authenticated
@@ -112,5 +120,5 @@ create policy "No direct approval decision access"
 
 comment on table public.approval_decisions is
   'Append-only terminal decision receipts for Yellow-action approvals. A changed decision requires a new approval request.';
-comment on function public.command_approval_allows_action(uuid, text, text, uuid) is
-  'Fail-closed server-side validity check only. It does not execute the proposed action.';
+comment on function public.command_approval_allows_action(uuid, text, text, uuid, jsonb) is
+  'Fail-closed server-side validity check for exact action, target, and approved/effective payload summary. It does not execute the proposed action.';
