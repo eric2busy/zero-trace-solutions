@@ -2,6 +2,12 @@ const { authenticatedCommandUser } = require('./_lib/command-auth');
 const commandData = require('./_lib/command-data');
 
 const READ_ROLES = new Set(['owner', 'admin', 'operator']);
+const RESOURCES = {
+  customers: commandData.listCustomers,
+  jobs: commandData.listJobs,
+  approvals: commandData.listApprovals,
+  activity: commandData.listActivity,
+};
 
 function sendJson(res, statusCode, body) {
   res.statusCode = statusCode;
@@ -26,12 +32,11 @@ module.exports = async function commandDataHandler(req, res) {
   }
 
   const resource = String(req.query?.resource || 'customers');
-  if (resource !== 'customers') {
-    return sendJson(res, 400, { error: 'unsupported_resource' });
-  }
+  const reader = RESOURCES[resource];
+  if (!reader) return sendJson(res, 400, { error: 'unsupported_resource' });
 
   try {
-    const data = await commandData.listCustomers();
+    const data = await reader();
     return sendJson(res, 200, {
       resource,
       data,
