@@ -11,6 +11,22 @@ function configured() {
   return Boolean(process.env.SUPABASE_URL && serverKey());
 }
 
+function serverHeaders(key) {
+  const headers = {
+    apikey: key,
+    Accept: 'application/json',
+  };
+
+  // Modern sb_secret_ keys are API keys, not JWTs. Sending them as a
+  // Bearer token causes Supabase to reject the request as an invalid JWT.
+  // The legacy service_role key remains JWT-based and needs Authorization.
+  if (!key.startsWith('sb_secret_')) {
+    headers.Authorization = `Bearer ${key}`;
+  }
+
+  return headers;
+}
+
 async function restRequest(path, options = {}) {
   const key = serverKey();
   if (!process.env.SUPABASE_URL || !key) {
@@ -22,9 +38,7 @@ async function restRequest(path, options = {}) {
   return fetch(`${process.env.SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
     headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      Accept: 'application/json',
+      ...serverHeaders(key),
       ...(options.headers || {}),
     },
   });
@@ -73,5 +87,6 @@ module.exports = {
   listJobs,
   readJson,
   restRequest,
+  serverHeaders,
   serverKey,
 };
