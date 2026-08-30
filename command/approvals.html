@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="theme-color" content="#eef6ff" />
+  <title>ZT Command · Approval Center</title>
+  <style>
+    :root{--blue:#0083f5;--ink:#262626;--muted:#6c6c6c;--line:#d9e1ea;--green:#1d8d5b;--amber:#b97610;--red:#bd4141;--bg:#f6faff;--card:#fff}
+    *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#edf6ff,#fff 45%,#f7fbff);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}button,textarea{font:inherit}.shell{max-width:760px;margin:auto;padding:max(20px,env(safe-area-inset-top)) 16px calc(36px + env(safe-area-inset-bottom))}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px}.back{color:var(--blue);text-decoration:none;font-weight:700;font-size:13px}.mode{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:#edf5ff;color:var(--blue);padding:8px 10px;border-radius:999px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--blue)}h1{font-size:38px;line-height:1;margin:6px 0 8px;letter-spacing:-.04em}p{color:var(--muted);line-height:1.55}.tabs{display:flex;gap:8px;overflow:auto;margin:20px 0 14px}.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 13px;font-size:11px;font-weight:800;color:var(--muted)}.tab.active{border-color:#a9d5ff;background:#eaf5ff;color:var(--blue)}.notice{padding:13px 14px;border:1px solid #f0d49a;background:#fff9ea;border-radius:16px;font-size:11px;line-height:1.5;color:#77510d;margin-bottom:14px}.card{background:var(--card);border:1px solid rgba(211,220,230,.9);border-radius:22px;box-shadow:0 14px 34px rgba(38,38,38,.07);padding:18px;margin-bottom:12px}.row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.badge{display:inline-flex;padding:6px 8px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.yellow{background:#fff3dc;color:var(--amber)}.green{background:#eaf8f1;color:var(--green)}.red{background:#fff0f0;color:var(--red)}.gray{background:#f2f3f5;color:#707070}.title{font-size:18px;font-weight:800;letter-spacing:-.02em}.meta{font-size:10px;color:#888;margin-top:5px}.summary{margin:14px 0;padding:12px;border-radius:15px;background:#f7f9fc;font-size:12px;line-height:1.55}.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px}.kv div{padding:10px;border:1px solid #edf0f4;border-radius:13px}.kv span{display:block;color:#919191;font-size:9px;text-transform:uppercase;font-weight:800;letter-spacing:.06em}.kv strong{display:block;margin-top:4px;font-size:11px;line-height:1.35}.actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.btn{border-radius:999px;padding:10px 8px;font-size:11px;font-weight:800;border:1px solid var(--line);background:#fff}.approve{background:var(--blue);border-color:var(--blue);color:#fff}.reject{color:var(--red)}.modify{color:var(--blue)}.history{border-top:1px solid #edf0f4;margin-top:14px;padding-top:12px;font-size:11px;color:var(--muted);line-height:1.5}.hidden{display:none!important}.empty{text-align:center;padding:34px 15px;color:var(--muted)}dialog{border:0;border-radius:22px;padding:0;max-width:520px;width:calc(100% - 28px);box-shadow:0 30px 90px rgba(0,0,0,.25)}dialog::backdrop{background:rgba(20,28,36,.42);backdrop-filter:blur(3px)}.dialog-body{padding:20px}.dialog-body h2{margin:4px 0 8px;font-size:23px}.dialog-body textarea{width:100%;min-height:110px;border:1px solid var(--line);border-radius:15px;padding:12px;resize:vertical}.dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.foot{margin-top:18px;text-align:center;color:#999;font-size:10px;line-height:1.5}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <div class="top"><a class="back" href="./">← Command</a><span class="mode">Fixture mode</span></div>
+  <div class="eyebrow">Owner control · Approval Center</div>
+  <h1>Decide exceptions fast.</h1>
+  <p>Yellow actions stop here until a valid owner decision exists. Red actions stay prohibited. This Preview uses fixture records only and performs no operational writes.</p>
+  <div class="tabs" role="tablist"><button class="tab active" data-filter="pending">Pending <span id="pendingCount">2</span></button><button class="tab" data-filter="decided">Decided</button><button class="tab" data-filter="expired">Expired</button></div>
+  <div class="notice">Approval validity is scoped to the exact action and target. Expired, cancelled, rejected, missing, or mismatched approvals fail closed.</div>
+
+  <section id="cards">
+    <article class="card" data-state="pending" data-id="price-001">
+      <div class="row"><div><div class="eyebrow">Sales Agent</div><div class="title">Recurring-service pricing exception</div><div class="meta">Requested 18 min ago · expires in 2h</div></div><span class="badge yellow">Yellow</span></div>
+      <div class="summary"><strong>Proposed action:</strong> prepare a 12-month multi-location commercial proposal with nonstandard recurring terms. Nothing has been sent.</div>
+      <div class="kv"><div><span>Authority basis</span><strong>custom_price · owner approval required</strong></div><div><span>Target</span><strong>Proposal fixture · BrightWorks Dental</strong></div><div><span>Requested by</span><strong>Sales Agent · agent identity</strong></div><div><span>Correlation</span><strong>Fixture approval chain #A-104</strong></div></div>
+      <div class="actions"><button class="btn reject" data-decision="rejected">Reject</button><button class="btn modify" data-decision="modified">Modify</button><button class="btn approve" data-decision="approved">Approve</button></div>
+    </article>
+
+    <article class="card" data-state="pending" data-id="schedule-002">
+      <div class="row"><div><div class="eyebrow">Operations Agent</div><div class="title">Nonstandard schedule exception</div><div class="meta">Requested 6 min ago · expires in 45m</div></div><span class="badge yellow">Yellow</span></div>
+      <div class="summary"><strong>Proposed action:</strong> hold a tentative service window outside the standard fixture schedule. Calendar remains authoritative and has not been changed.</div>
+      <div class="kv"><div><span>Authority basis</span><strong>nonstandard_customer_commitment</strong></div><div><span>Target</span><strong>Job fixture · Northlake Pediatrics</strong></div><div><span>Requested by</span><strong>Operations Agent</strong></div><div><span>External effect</span><strong>Blocked pending approval</strong></div></div>
+      <div class="actions"><button class="btn reject" data-decision="rejected">Reject</button><button class="btn modify" data-decision="modified">Modify</button><button class="btn approve" data-decision="approved">Approve</button></div>
+    </article>
+
+    <article class="card hidden" data-state="decided"><div class="row"><div><div class="eyebrow">Customer Service Agent</div><div class="title">Unverified refund request</div><div class="meta">Decided Aug 28 · owner</div></div><span class="badge red">Rejected</span></div><div class="history"><strong>Immutable receipt:</strong> rejected because the request lacked an approved refund basis. No external action executed.</div></article>
+    <article class="card hidden" data-state="decided"><div class="row"><div><div class="eyebrow">Operations Agent</div><div class="title">Routine reschedule exception</div><div class="meta">Decided Aug 28 · owner</div></div><span class="badge green">Modified</span></div><div class="history"><strong>Immutable receipt:</strong> approved only for the owner-selected alternate window. Original proposal was not authorized.</div></article>
+    <article class="card hidden" data-state="expired"><div class="row"><div><div class="eyebrow">Sales Agent</div><div class="title">Commercial proposal exception</div><div class="meta">Expired Aug 27</div></div><span class="badge gray">Expired</span></div><div class="history">Expired approvals cannot authorize work. A new request is required.</div></article>
+  </section>
+  <div id="empty" class="empty hidden">No fixture approvals in this view.</div>
+  <div class="foot">Static Command Preview · no Supabase read/write · no Calendar, Notion, Resend, or customer action</div>
+</main>
+
+<dialog id="decisionDialog"><form method="dialog" class="dialog-body"><div class="eyebrow">Decision receipt</div><h2 id="dialogTitle">Record decision</h2><p id="dialogCopy">Add the owner-facing rationale that would be retained with the immutable decision receipt.</p><textarea id="rationale" maxlength="2000" placeholder="Fixture rationale only — no customer data"></textarea><div class="dialog-actions"><button class="btn" value="cancel">Cancel</button><button class="btn approve" id="confirmDecision" value="default">Record fixture decision</button></div></form></dialog>
+
+<script>
+  const tabs=[...document.querySelectorAll('[data-filter]')],cards=[...document.querySelectorAll('[data-state]')],empty=document.getElementById('empty'),dialog=document.getElementById('decisionDialog'),rationale=document.getElementById('rationale');
+  let pendingDecision=null,pendingCard=null;
+  function filter(state){let shown=0;cards.forEach(card=>{const visible=card.dataset.state===state;card.classList.toggle('hidden',!visible);if(visible)shown++});tabs.forEach(tab=>tab.classList.toggle('active',tab.dataset.filter===state));empty.classList.toggle('hidden',shown!==0)}
+  tabs.forEach(tab=>tab.addEventListener('click',()=>filter(tab.dataset.filter)));
+  document.querySelectorAll('[data-decision]').forEach(button=>button.addEventListener('click',()=>{pendingDecision=button.dataset.decision;pendingCard=button.closest('[data-state]');document.getElementById('dialogTitle').textContent=`${pendingDecision[0].toUpperCase()+pendingDecision.slice(1)} fixture request`;document.getElementById('dialogCopy').textContent=pendingDecision==='modified'?'Describe the allowed modification. The original proposal remains unauthorized.':'Add the owner-facing rationale that would be retained with the immutable decision receipt.';rationale.value='';dialog.showModal()}));
+  document.getElementById('confirmDecision').addEventListener('click',event=>{event.preventDefault();if(!pendingCard)return;const note=rationale.value.trim()||'Fixture decision recorded for Preview verification only.';pendingCard.dataset.state='decided';pendingCard.querySelector('.actions')?.remove();const badge=pendingCard.querySelector('.badge');badge.textContent=pendingDecision;badge.className=`badge ${pendingDecision==='approved'?'green':pendingDecision==='rejected'?'red':'green'}`;const history=document.createElement('div');history.className='history';history.innerHTML=`<strong>Immutable receipt preview:</strong> ${note.replace(/[<>]/g,'')}`;pendingCard.appendChild(history);dialog.close();filter('pending');document.getElementById('pendingCount').textContent=document.querySelectorAll('[data-state="pending"]').length;pendingCard=null;pendingDecision=null});
+  filter('pending');
+</script>
+</body>
+</html>
