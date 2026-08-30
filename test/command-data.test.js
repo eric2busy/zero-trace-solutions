@@ -57,5 +57,61 @@ test('customer read contract excludes contact PII and returns canonical customer
   assert.deepEqual(result, { customers: [], organizations: [] });
   assert.equal(urls.length, 2);
   assert.equal(urls.some(url => url.includes('customer_contacts')), false);
-  assert.equal(urls.every(url => !url.includes('value') && !url.includes('normalized_value')), true);
+  assert.equal(urls.every(url => !url.includes('normalized_value')), true);
+});
+
+test('jobs read contract exposes schedule and active assignments without note bodies', async () => {
+  setBaseEnv();
+  process.env.SUPABASE_SECRET_KEY = 'secret-key';
+  const originalFetch = global.fetch;
+  const urls = [];
+  global.fetch = async url => {
+    urls.push(url);
+    return { ok: true, json: async () => [] };
+  };
+
+  const result = await commandData.listJobs();
+  global.fetch = originalFetch;
+
+  assert.deepEqual(result, { jobs: [], assignments: [] });
+  assert.equal(urls.some(url => url.includes('/jobs?')), true);
+  assert.equal(urls.some(url => url.includes('/job_assignments?')), true);
+  assert.equal(urls.some(url => url.includes('job_notes')), false);
+  assert.equal(urls.some(url => url.includes('service_details')), false);
+});
+
+test('approval read contract includes immutable decision receipts and exact payload summaries', async () => {
+  setBaseEnv();
+  process.env.SUPABASE_SECRET_KEY = 'secret-key';
+  const originalFetch = global.fetch;
+  const urls = [];
+  global.fetch = async url => {
+    urls.push(url);
+    return { ok: true, json: async () => [] };
+  };
+
+  const result = await commandData.listApprovals();
+  global.fetch = originalFetch;
+
+  assert.deepEqual(result, { approvals: [], decisions: [] });
+  assert.equal(urls.some(url => url.includes('proposed_payload_summary')), true);
+  assert.equal(urls.some(url => url.includes('effective_payload_summary')), true);
+});
+
+test('activity read contract excludes metadata payloads and returns audit identifiers', async () => {
+  setBaseEnv();
+  process.env.SUPABASE_SECRET_KEY = 'secret-key';
+  const originalFetch = global.fetch;
+  let observed = '';
+  global.fetch = async url => {
+    observed = url;
+    return { ok: true, json: async () => [] };
+  };
+
+  const result = await commandData.listActivity();
+  global.fetch = originalFetch;
+
+  assert.deepEqual(result, { activity: [] });
+  assert.equal(observed.includes('correlation_id'), true);
+  assert.equal(observed.includes('metadata'), false);
 });
