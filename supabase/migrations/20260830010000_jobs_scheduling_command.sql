@@ -26,7 +26,6 @@ create table public.jobs (
   calendar_event_id text unique,
   correlation_id uuid not null default gen_random_uuid(),
   idempotency_key text check (idempotency_key is null or char_length(idempotency_key) between 1 and 200),
-  scheduled_at timestamptz,
   completed_at timestamptz,
   cancelled_at timestamptz,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
@@ -75,6 +74,10 @@ create table public.job_notes (
 
 create unique index jobs_source_idempotency_key_idx
   on public.jobs (source_system, idempotency_key) where idempotency_key is not null;
+-- A non-null provider record is the canonical reconciliation identity within
+-- its provider. NULL remains available for manual/draft records with no source.
+create unique index jobs_source_record_id_idx
+  on public.jobs (source_system, source_record_id) where source_record_id is not null;
 create unique index job_notes_idempotency_key_idx
   on public.job_notes (job_id, idempotency_key) where idempotency_key is not null;
 create unique index job_assignments_active_role_idx
@@ -95,12 +98,20 @@ begin
 end;
 $$;
 
--- `service_locations` permits either a customer or organization owner, so a
--- composite foreign key would skip validation when one optional owner is NULL.
--- Validate the optional reference explicitly and fail closed on a mismatch.
+-- Jobs can name a customer without a service location, so validate that
+-- customer's organization independently. `service_locations` permits either
+-- optional owner, so validate its references separately and fail closed.
 create function public.command_validate_job_location()
 returns trigger language plpgsql set search_path = '' as $$
 begin
+  if new.customer_id is not null and new.organization_id is not null and not exists (
+    select 1 from public.customers customer
+    where customer.id = new.customer_id
+      and customer.organization_id = new.organization_id
+  ) then
+    raise exception 'job customer and organization must match';
+  end if;
+
   if new.service_location_id is not null and not exists (
     select 1 from public.service_locations location
     where location.id = new.service_location_id
@@ -135,6 +146,7 @@ create policy "No direct job assignment access" on public.job_assignments as res
 create policy "No direct job note access" on public.job_notes as restrictive for all to authenticated using (false) with check (false);
 
 comment on table public.jobs is 'Canonical service visits and walkthroughs. Calendar remains scheduling authority; no sync worker is created.';
+comment on column public.jobs.source_record_id is 'Canonical source record identity; unique per source_system when present for future reconciliation. No sync worker is created.';
 comment on table public.job_assignments is 'Technician and observer assignments for attribution and planning, not authorization.';
 comment on table public.job_notes is 'Append-only operational notes. Do not store secrets, raw provider payloads, or hidden reasoning.';
 comment on column public.jobs.calendar_event_id is 'Future Google Calendar seam only; this migration does not read, write, or synchronize Calendar.';

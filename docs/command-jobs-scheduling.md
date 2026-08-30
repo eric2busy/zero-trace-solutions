@@ -6,13 +6,13 @@ This Issue #26 slice prepares a canonical, private schema and a fixture-only Com
 
 ## Canonical model
 
-- `jobs` is the operational aggregate. It requires a customer or organization, can point to a service location, and validates all three together through the existing CRM ownership constraint.
+- `jobs` is the operational aggregate. It requires a customer or organization. When both are supplied, the customer must belong to that organization even without a service location; any supplied service location is separately required to match both owners.
 - `kind` is `walkthrough` or `service_visit`. `status` is `draft → scheduled → en_route → in_progress → completed`, with `cancelled` as a terminal exception. A future operations API must prevent invalid transitions and append `activity_events`; this migration intentionally avoids policy invention or an unsafe database-side transition API.
-- Appointment instants use `scheduled_start_at`/`scheduled_end_at` (`timestamptz`) and retain the communication timezone in `scheduled_timezone`, validated against installed IANA data. Scheduled, en-route, in-progress, and completed jobs require a schedule. Completion and cancellation carry their own audit timestamps.
+- Appointment instants use only `scheduled_start_at`/`scheduled_end_at` (`timestamptz`) and retain the communication timezone in `scheduled_timezone`, validated against installed IANA data. Scheduled, en-route, in-progress, and completed jobs require a schedule. Completion and cancellation carry their own audit timestamps. Calendar remains responsible for detecting schedule conflicts and overlap; this migration deliberately does not impose an overlap policy.
 - `job_assignments` points to the existing `actors` table for lead, technician, or observer planning. It is not authorization; trusted app metadata and `command_roles` remain the authorization boundary.
 - `job_notes` captures internal, completion, and exception notes as append-only records. The existing `activity_events` ledger remains the audit surface for meaningful actions and approval decisions.
 - `service_details` is structured JSON for approved future service fields. It must not contain secrets, raw provider payloads, or hidden reasoning.
-- `source_system`, `source_record_id`, `calendar_event_id`, `correlation_id`, and idempotency keys form the future reconciliation seam. `calendar_event_id` is a unique placeholder only: no Calendar read, write, or promise is made here.
+- `source_system`, `source_record_id`, `calendar_event_id`, `correlation_id`, and idempotency keys form the future reconciliation seam. A non-null `source_record_id` is unique within its `source_system`, preventing duplicate canonical jobs during a future Calendar or Notion reconciliation. `calendar_event_id` is a unique placeholder only: no Calendar read, write, or promise is made here.
 
 ## Access boundary
 

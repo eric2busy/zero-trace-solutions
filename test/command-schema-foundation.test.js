@@ -61,6 +61,17 @@ test('jobs and scheduling migration is private, auditable, and calendar-fixture-
   assert.match(jobsMigration, /job notes are immutable/);
   assert.match(jobsMigration, /scheduled_timezone/);
   assert.doesNotMatch(jobsMigration, /googleapis|calendar\.events|fetch\(/i);
-  assert.match(jobsTest, /select plan\(31\)/);
+  assert.match(jobsTest, /select plan\(45\)/);
   assert.match(jobsTest, /a scheduled job accepts matching customer, organization, location, and timezone/);
+  assert.match(jobsMigration, /jobs_source_record_id_idx/);
+  assert.match(jobsMigration, /job customer and organization must match/);
+  assert.doesNotMatch(jobsMigration, /scheduled_at/);
+});
+
+test('fixture job rows support keyboard activation without adding a data path', () => {
+  const commandHtml = fs.readFileSync(path.join(root, 'command/index.html'), 'utf8');
+  const commandScript = commandHtml.slice(commandHtml.lastIndexOf('<script>'));
+  assert.match(commandHtml, /data-job-detail="northlake"/);
+  assert.match(commandHtml, /event\.key==='Enter'\|\|event\.key===' '/);
+  assert.doesNotMatch(commandScript, /fetch\(/i);
 });
