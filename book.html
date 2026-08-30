@@ -120,6 +120,7 @@
     let leadId=null,leadData=null,selectedSlot=null;
 
     const dateInput=form.querySelector('[name="preferredDate"]');
+    const timeInput=form.querySelector('[name="preferredTime"]');
     const tomorrow=new Date(); tomorrow.setDate(tomorrow.getDate()+1); dateInput.min=tomorrow.toISOString().slice(0,10);
 
     function message(text,error=false){formMessage.textContent=text;formMessage.className=`text-sm text-center ${error?'text-red-600':'text-muted'}`;formMessage.classList.remove('hidden')}
@@ -127,6 +128,7 @@
       const [y,m,d]=date.split('-').map(Number);
       return new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).format(new Date(y,m-1,d,12,0,0));
     }
+    function refreshLeadData(){leadData=Object.fromEntries(new FormData(form).entries())}
 
     async function loadSlots(){
       selectedSlot=null;confirmBtn.disabled=true;slotsEl.innerHTML='';slotMessage.textContent='Checking the live schedule…';availabilityCard.classList.remove('hidden');
@@ -134,7 +136,17 @@
       const res=await fetch(`/api/availability?${params}`); const payload=await res.json().catch(()=>({}));
       if(!res.ok) throw new Error(payload.error||'Could not load availability');
       slotSubtitle.textContent=`${prettyDate(leadData.preferredDate)} · ${leadData.preferredTime||'Flexible'}`;
-      if(!payload.slots?.length){slotMessage.textContent='No open times match that date and time window. Change your preferred date/time above and submit again.';return}
+      if(!payload.slots?.length){
+        const reason=payload.availability?.emptyReason;
+        const noticeMinutes=Number(payload.availability?.minimumNoticeMinutes||0);
+        const noticeHours=Math.ceil(noticeMinutes/60);
+        if(reason==='minimum_notice'||reason==='notice_and_busy'){
+          slotMessage.textContent=`Those ${String(leadData.preferredTime||'times').toLowerCase()} times fall inside our ${noticeHours}-hour booking notice window. Try Afternoon or another date above—your request is already saved.`;
+        }else{
+          slotMessage.textContent='No open times match that date and time window. Try another date or time above—your request is already saved.';
+        }
+        return;
+      }
       slotMessage.textContent='These times are currently open. Your selection is re-checked before it is confirmed.';
       payload.slots.forEach(slot=>{
         const btn=document.createElement('button');btn.type='button';btn.className='slot-btn px-4 py-3 rounded-xl border border-border bg-white text-sm font-medium hover:border-primary transition';btn.textContent=slot.label;btn.setAttribute('aria-pressed','false');
@@ -143,13 +155,28 @@
       });
     }
 
+    async function refreshAvailability(){
+      if(!leadId)return;
+      refreshLeadData();
+      try{await loadSlots();availabilityCard.scrollIntoView({behavior:'smooth',block:'center'})}
+      catch(err){slotMessage.textContent=err.message||'Could not load availability'}
+    }
+
+    dateInput.addEventListener('change',refreshAvailability);
+    timeInput.addEventListener('change',refreshAvailability);
+
     form.addEventListener('submit',async e=>{
-      e.preventDefault();submitBtn.disabled=true;submitBtn.textContent='Checking…';formMessage.classList.add('hidden');availabilityCard.classList.add('hidden');confirmedCard.classList.add('hidden');
+      e.preventDefault();submitBtn.disabled=true;submitBtn.textContent=leadId?'Refreshing…':'Checking…';formMessage.classList.add('hidden');confirmedCard.classList.add('hidden');
       try{
-        leadData=Object.fromEntries(new FormData(form).entries());
+        refreshLeadData();
+        if(leadId){
+          message('Your request is already saved. Updated availability is shown below.');
+          await loadSlots();availabilityCard.scrollIntoView({behavior:'smooth',block:'center'});return;
+        }
+        availabilityCard.classList.add('hidden');
         const res=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(leadData)});const payload=await res.json().catch(()=>({}));
-        if(!res.ok) throw new Error(payload.error||'Request failed');leadId=payload.id;message('Your details are saved. Choose an available time below.');await loadSlots();availabilityCard.scrollIntoView({behavior:'smooth',block:'center'});
-      }catch(err){message(err.message||'Something went wrong. Please try again.',true)}finally{submitBtn.disabled=false;submitBtn.textContent='See available times'}
+        if(!res.ok) throw new Error(payload.error||'Request failed');leadId=payload.id;submitBtn.textContent='Refresh available times';message('Your details are saved. Choose an available time below.');await loadSlots();availabilityCard.scrollIntoView({behavior:'smooth',block:'center'});
+      }catch(err){message(err.message||'Something went wrong. Please try again.',true)}finally{submitBtn.disabled=false;submitBtn.textContent=leadId?'Refresh available times':'See available times'}
     });
 
     confirmBtn.addEventListener('click',async()=>{
