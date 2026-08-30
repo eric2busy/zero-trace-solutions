@@ -25,6 +25,27 @@ create index approval_decisions_actor_created_at_idx
 create index approval_decisions_correlation_id_idx
   on public.approval_decisions (correlation_id);
 
+-- Decision receipts must mirror the already-terminal approval projection. This
+-- prevents contradictory audit evidence from being inserted even by a future
+-- server-side writer. A changed decision requires a brand-new approval request.
+create function public.command_validate_approval_decision_insert()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if not exists (
+    select 1
+    from public.approvals approval
+    where approval.id = new.approval_id
+      and approval.status = new.decision
+      and approval.status <> 'pending'
+      and approval.decided_by_actor_id = new.decided_by_actor_id
+      and approval.correlation_id = new.correlation_id
+  ) then
+    raise exception 'approval decision must match terminal approval state';
+  end if;
+  return new;
+end;
+$$;
+
 -- Decision receipts are append-only. A correction is a new approval request,
 -- never a rewrite of the historical decision that authorized or blocked work.
 create function public.command_reject_approval_decision_mutation()
@@ -34,6 +55,9 @@ begin
 end;
 $$;
 
+create trigger command_validate_approval_decision_insert
+  before insert on public.approval_decisions
+  for each row execute procedure public.command_validate_approval_decision_insert();
 create trigger command_reject_approval_decision_update
   before update on public.approval_decisions
   for each row execute procedure public.command_reject_approval_decision_mutation();
@@ -78,6 +102,7 @@ $$;
 
 alter table public.approval_decisions enable row level security;
 revoke all on table public.approval_decisions from anon, authenticated;
+revoke all on function public.command_validate_approval_decision_insert() from public, anon, authenticated;
 revoke all on function public.command_reject_approval_decision_mutation() from public, anon, authenticated;
 revoke all on function public.command_approval_allows_action(uuid, text, text, uuid) from public, anon, authenticated;
 
