@@ -1,19 +1,19 @@
 begin;
 select plan(26);
 
-select has_table('public', 'approval_decisions');
-select col_is_pk('public', 'approval_decisions', 'id');
-select col_not_null('public', 'approval_decisions', 'approval_id');
-select col_not_null('public', 'approval_decisions', 'decided_by_actor_id');
-select col_not_null('public', 'approval_decisions', 'decision');
-select col_not_null('public', 'approval_decisions', 'authority_basis');
-select col_not_null('public', 'approval_decisions', 'rationale');
-select col_not_null('public', 'approval_decisions', 'correlation_id');
-select row_security_active('public.approval_decisions');
-select policies_are('public', 'approval_decisions', array['No direct approval decision access']);
-select table_privs_are('public', 'approval_decisions', 'authenticated', array[]::text[]);
-select table_privs_are('public', 'approval_decisions', 'anon', array[]::text[]);
-select has_function('public', 'command_approval_allows_action', array['uuid','text','text','uuid','jsonb']);
+select has_table('public'::name, 'approval_decisions'::name);
+select col_is_pk('public'::name, 'approval_decisions'::name, 'id'::name);
+select col_not_null('public'::name, 'approval_decisions'::name, 'approval_id'::name);
+select col_not_null('public'::name, 'approval_decisions'::name, 'decided_by_actor_id'::name);
+select col_not_null('public'::name, 'approval_decisions'::name, 'decision'::name);
+select col_not_null('public'::name, 'approval_decisions'::name, 'authority_basis'::name);
+select col_not_null('public'::name, 'approval_decisions'::name, 'rationale'::name);
+select col_not_null('public'::name, 'approval_decisions'::name, 'correlation_id'::name);
+select ok((select relrowsecurity from pg_class where oid = 'public.approval_decisions'::regclass), 'approval_decisions has row-level security enabled');
+select policies_are('public', 'approval_decisions', array['No direct approval decision access']::name[]);
+select table_privs_are('public', 'approval_decisions', 'authenticated', array[]::name[]);
+select table_privs_are('public', 'approval_decisions', 'anon', array[]::name[]);
+select has_function('public', 'command_approval_allows_action', array['uuid','text','text','uuid','jsonb']::name[]);
 
 select lives_ok($$
   insert into public.actors (id, kind, display_name, service_key)
