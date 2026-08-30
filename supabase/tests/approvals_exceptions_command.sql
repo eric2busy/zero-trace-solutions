@@ -1,5 +1,5 @@
 begin;
-select plan(22);
+select plan(21);
 
 select has_table('public', 'approval_decisions');
 select col_is_pk('public', 'approval_decisions', 'id');
@@ -19,16 +19,8 @@ select lives_ok($$
   insert into public.actors (id, kind, display_name, service_key)
   values
     ('70000000-0000-0000-0000-000000000001', 'agent', 'Fixture requester', 'fixture-requester'),
-    ('70000000-0000-0000-0000-000000000002', 'human', 'Fixture owner', null);
-$$, 'fixture actors can be prepared for approval testing');
-
--- The human actor requires auth_user_id under the foundation constraint, so
--- convert the second fixture to a service actor in a separate safe statement.
-select lives_ok($$
-  delete from public.actors where id = '70000000-0000-0000-0000-000000000002';
-  insert into public.actors (id, kind, display_name, service_key)
-  values ('70000000-0000-0000-0000-000000000002', 'service', 'Fixture owner proxy', 'fixture-owner-proxy');
-$$, 'decision actor fixture satisfies attribution constraints');
+    ('70000000-0000-0000-0000-000000000002', 'service', 'Fixture owner proxy', 'fixture-owner-proxy');
+$$, 'fixture attribution actors satisfy foundation constraints');
 
 select lives_ok($$
   insert into public.approvals (
