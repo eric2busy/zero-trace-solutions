@@ -5,6 +5,7 @@
  */
 
 const { google } = require('googleapis');
+const { syncConfirmedBooking } = require('./_lib/booking-command-sync');
 const { confirmedTimeSlotDate } = require('./notion-booking-time');
 const { sendTransactionalEmail } = require('./_email');
 
@@ -119,6 +120,14 @@ module.exports = async function handler(req, res) {
       return json(res, 502, { error: 'Booking could not be finalized. Please choose the time again.' }, origin);
     }
 
+    const commandSync = await syncConfirmedBooking({
+      leadId,
+      scheduledStartAt: new Date(startMs).toISOString(),
+      scheduledEndAt: new Date(endMs).toISOString(),
+      timezone: TIMEZONE,
+      calendarEventId: event.data.id,
+    });
+
     const pretty = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(`${start}${offset}`));
 
     const emailDelivery = {
@@ -142,7 +151,7 @@ module.exports = async function handler(req, res) {
       }),
     };
 
-    return json(res, 200, { ok: true, calendarEventId: event.data.id, start, end, emailDelivery }, origin);
+    return json(res, 200, { ok: true, calendarEventId: event.data.id, start, end, commandSync, emailDelivery }, origin);
   } catch (err) {
     console.error('Booking error', err?.message || err);
     return json(res, 500, { error: 'Unable to complete booking right now' }, origin);
