@@ -118,19 +118,40 @@ module.exports = async function handler(req, res) {
     const nowWithNotice = Date.now() + minimumNoticeMinutes * 60000;
 
     const slots = [];
+    let candidateCount = 0;
+    let noticeExcludedCount = 0;
+    let busyExcludedCount = 0;
     let cursor = localIso(date, startClock);
     const closing = localIso(date, endClock);
     while (localMs(cursor, offset) < localMs(closing, offset)) {
       const end = addMinutes(cursor, slotMinutes, offset);
       if (localMs(end, offset) > localMs(closing, offset)) break;
+      candidateCount += 1;
       const blocked = busy.some((b) => overlaps(cursor, end, b.start, b.end, bufferMinutes, offset));
-      if (!blocked && localMs(cursor, offset) >= nowWithNotice) {
-        slots.push({ start: cursor, end, label: slotLabel(cursor), timeZone: TIMEZONE });
-      }
+      const insideNoticeWindow = localMs(cursor, offset) < nowWithNotice;
+      if (insideNoticeWindow) noticeExcludedCount += 1;
+      else if (blocked) busyExcludedCount += 1;
+      else slots.push({ start: cursor, end, label: slotLabel(cursor), timeZone: TIMEZONE });
       cursor = addMinutes(cursor, slotMinutes, offset);
     }
 
-    return json(res, 200, { ok: true, date, window: windowName, slots }, origin);
+    let emptyReason = null;
+    if (!slots.length && candidateCount > 0) {
+      if (noticeExcludedCount === candidateCount) emptyReason = 'minimum_notice';
+      else if (busyExcludedCount + noticeExcludedCount === candidateCount && noticeExcludedCount > 0) emptyReason = 'notice_and_busy';
+      else emptyReason = 'calendar_busy';
+    }
+
+    return json(res, 200, {
+      ok: true,
+      date,
+      window: windowName,
+      slots,
+      availability: {
+        emptyReason,
+        minimumNoticeMinutes,
+      },
+    }, origin);
   } catch (err) {
     console.error('Availability error', err?.message || err);
     return json(res, 500, { error: 'Unable to check availability right now' }, origin);
