@@ -60,23 +60,25 @@ module.exports = async function commandDataHandler(req, res) {
   if (req.method === 'PATCH') {
     if (!CUSTOMER_WRITE_ROLES.has(identity.role)) return sendJson(res, 403, { error: 'insufficient_role' });
     const resource = String(req.query?.resource || '');
-    if (resource !== 'customer') return sendJson(res, 400, { error: 'unsupported_resource' });
+    if (!['customer', 'job'].includes(resource)) return sendJson(res, 400, { error: 'unsupported_resource' });
     const body = await parseBody(req);
     if (!body) return sendJson(res, 400, { error: 'invalid_json' });
 
     try {
-      const result = await commandData.updateCustomer({ authUserId: identity.user.id, input: body });
+      const result = resource === 'job'
+        ? await commandData.updateJob({ authUserId: identity.user.id, input: body })
+        : await commandData.updateCustomer({ authUserId: identity.user.id, input: body });
       if (result.state === 'invalid') return sendJson(res, 400, { error: result.error });
-      if (result.state === 'not_found') return sendJson(res, 404, { error: 'customer_not_found' });
-      if (result.state === 'stale') return sendJson(res, 409, { error: 'stale_customer_version', currentVersion: result.currentVersion });
-      return sendJson(res, 200, { ok: true, state: result.state, customer: result.customer });
+      if (result.state === 'not_found') return sendJson(res, 404, { error: resource === 'job' ? 'job_not_found' : 'customer_not_found' });
+      if (result.state === 'stale') return sendJson(res, 409, { error: resource === 'job' ? 'stale_job_version' : 'stale_customer_version', currentVersion: result.currentVersion });
+      return sendJson(res, 200, { ok: true, state: result.state, [resource]: result[resource] });
     } catch (error) {
       console.error('command_customer_update_failed', {
         code: error?.code || 'unknown',
         status: error?.status || null,
       });
       if (error?.code === 'COMMAND_ACTOR_NOT_PROVISIONED') return sendJson(res, 409, { error: 'command_actor_not_provisioned' });
-      return sendJson(res, 502, { error: 'customer_update_failed' });
+      return sendJson(res, 502, { error: resource === 'job' ? 'job_update_failed' : 'customer_update_failed' });
     }
   }
 

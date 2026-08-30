@@ -22,6 +22,12 @@ All new tables use RLS, revoke every `anon` and `authenticated` privilege, and i
 
 The Schedule and Jobs sections use invented sample records only. They show filterable upcoming/scheduled/completed/cancelled states, a calendar-style week strip, active state treatment, a static job-detail sheet, service details, assignments, notes, and a clear prototype notice. The sheet's buttons only explain the future approval boundary; they do not make a request or touch an API.
 
+## Controlled operational editing (Issue #60)
+
+The first live Command write slice is deliberately narrower than the schema. Authenticated Owner and Admin users may edit a job title and move a currently scheduled job forward to `en_route`, `in_progress`, or `completed` (with a completion timestamp). Draft jobs may receive title-only corrections. Operator is read-only and Technician has no Command data access. Every request is server-only, strictly allowlisted, expected-version checked, attributed to the authenticated human actor, and appended to `activity_events`. If appending the audit event fails, the job write is compensated with an expected-version rollback; a failed rollback is surfaced as a partial-mutation failure rather than being hidden.
+
+Calendar-backed scheduling fields (`scheduled_start_at`, `scheduled_end_at`, `scheduled_timezone`, `calendar_event_id`), source/reconciliation fields, assignments, notes, and cancellation are not editable in this slice. Rescheduling or cancelling a Calendar-backed booking requires a separately approved synchronization and rollback design.
+
 ## Validation
 
 Run `npm test`, `npm run check`, and `git diff --check`. With an owner-approved clean local database only, apply migrations in timestamp order and run `supabase test db --file supabase/tests/jobs_scheduling_command.sql`. Do not use a connected Supabase project for this feature.
