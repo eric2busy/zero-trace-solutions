@@ -47,3 +47,31 @@ test('customers and companies migration is scoped, private, and covered by pgTAP
   assert.match(crmMigration, /command_is_iana_timezone/);
   assert.match(crmTest, /'a service location rejects a customer from another organization'/);
 });
+
+test('jobs and scheduling migration is private, auditable, and calendar-fixture-only', () => {
+  const jobsMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260830010000_jobs_scheduling_command.sql'), 'utf8');
+  const jobsTest = fs.readFileSync(path.join(root, 'supabase/tests/jobs_scheduling_command.sql'), 'utf8');
+  for (const table of ['jobs', 'job_assignments', 'job_notes']) {
+    assert.match(jobsMigration, new RegExp(`create table public\\.${table} \\(`));
+    assert.match(jobsMigration, new RegExp(`alter table public\\.${table} enable row level security`));
+  }
+  assert.match(jobsMigration, /revoke all on table public\.jobs, public\.job_assignments, public\.job_notes from anon, authenticated/);
+  assert.match(jobsMigration, /raw_app_meta_data|app metadata|app_metadata/i);
+  assert.match(jobsMigration, /Google Calendar remains scheduling authority/);
+  assert.match(jobsMigration, /job notes are immutable/);
+  assert.match(jobsMigration, /scheduled_timezone/);
+  assert.doesNotMatch(jobsMigration, /googleapis|calendar\.events|fetch\(/i);
+  assert.match(jobsTest, /select plan\(45\)/);
+  assert.match(jobsTest, /a scheduled job accepts matching customer, organization, location, and timezone/);
+  assert.match(jobsMigration, /jobs_source_record_id_idx/);
+  assert.match(jobsMigration, /job customer and organization must match/);
+  assert.doesNotMatch(jobsMigration, /scheduled_at/);
+});
+
+test('fixture job rows support keyboard activation without adding a data path', () => {
+  const commandHtml = fs.readFileSync(path.join(root, 'command/index.html'), 'utf8');
+  const commandScript = commandHtml.slice(commandHtml.lastIndexOf('<script>'));
+  assert.match(commandHtml, /data-job-detail="northlake"/);
+  assert.match(commandHtml, /event\.key==='Enter'\|\|event\.key===' '/);
+  assert.doesNotMatch(commandScript, /fetch\(/i);
+});
