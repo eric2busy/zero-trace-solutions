@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'command', 'approvals.html'), 'utf8');
+const vercel = fs.readFileSync(path.join(__dirname, '..', 'vercel.json'), 'utf8');
+const commandHandler = fs.readFileSync(path.join(__dirname, '..', 'api', 'command.js'), 'utf8');
 
 test('approval center exposes required fixture decision states and safety copy', () => {
   assert.match(html, /Approval Center/);
@@ -25,4 +27,14 @@ test('fixture decisions remain local UI behavior only', () => {
   assert.doesNotMatch(html, /supabase\.from/i);
   assert.doesNotMatch(html, /googleapis/i);
   assert.doesNotMatch(html, /api\/.*approval/i);
+});
+
+test('Approval Center is served only through authenticated Command handler', () => {
+  assert.match(vercel, /command\/approvals/);
+  assert.match(vercel, /api\/command\?view=approvals/);
+  assert.match(vercel, /command\/\*\.html/);
+  assert.match(commandHandler, /authenticatedCommandUser\(req\)/);
+  assert.match(commandHandler, /req\.query\?\.view === 'approvals'/);
+  assert.match(commandHandler, /'approvals\.html'/);
+  assert.match(commandHandler, /Cache-Control', 'no-store, private'/);
 });
