@@ -87,6 +87,65 @@
     section.innerHTML = `<div class="section-header"><div class="eyebrow">Oversight · Live read-only</div><h2>AI Activity</h2><p>A human-readable view of the canonical activity ledger.</p></div><div class="card panel">${rows || '<div class="empty"><strong>No activity yet</strong><span>The live audit ledger is connected and empty.</span></div>'}</div>`;
   }
 
+  function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+  }
+
+  function dashboardEvent(job) {
+    return `<div class="event"><div class="event-time">${escapeHtml(new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(job.scheduled_start_at)))}</div><div><div class="event-name">${escapeHtml(job.title)}</div><div class="event-meta">${escapeHtml(titleCase(job.kind))} · ${escapeHtml(job.scheduled_timezone || 'Timezone pending')}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div>`;
+  }
+
+  function dashboardActivity(item) {
+    const actor = item.actors || {};
+    const actorName = actor.display_name || titleCase(actor.kind) || 'Activity actor';
+    return `<div class="attention"><div><strong>${escapeHtml(titleCase(item.action))}</strong><span>${escapeHtml(actorName)} · ${escapeHtml(titleCase(item.target_type))} · ${escapeHtml(formatDate(item.created_at))}</span></div><span class="badge ${badgeClass(item.authority_level)}">${escapeHtml(titleCase(item.authority_level))}</span></div>`;
+  }
+
+  function isToday(value) {
+    if (!value) return false;
+    const date = new Date(value);
+    const today = new Date();
+    return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate();
+  }
+
+  function renderDashboard({ customers, jobs, approvals, activity }) {
+    const liveCustomers = customers.customers || [];
+    const liveJobs = jobs.jobs || [];
+    const activeJobs = liveJobs.filter(job => !['completed', 'cancelled'].includes(job.status));
+    const scheduled = activeJobs.filter(job => job.scheduled_start_at).sort((a, b) => new Date(a.scheduled_start_at) - new Date(b.scheduled_start_at));
+    const todayJobs = scheduled.filter(job => isToday(job.scheduled_start_at));
+    const pendingApprovals = (approvals.approvals || []).filter(item => item.status === 'pending');
+    const liveActivity = activity.activity || [];
+
+    setText('dashboardDate', new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric' }).format(new Date()));
+    setText('dashboardTodayValue', String(todayJobs.length));
+    setText('dashboardTodayNote', todayJobs.length === 1 ? '1 scheduled visit' : `${todayJobs.length} scheduled visits`);
+    setText('dashboardCustomersValue', String(liveCustomers.length));
+    setText('dashboardCustomersNote', liveCustomers.length === 1 ? '1 canonical customer' : `${liveCustomers.length} canonical customers`);
+    setText('dashboardApprovalsValue', String(pendingApprovals.length));
+    setText('dashboardApprovalsNote', pendingApprovals.length === 1 ? '1 awaiting a decision' : `${pendingApprovals.length} awaiting a decision`);
+    setText('dashboardActivityValue', String(liveActivity.length));
+    setText('dashboardActivityNote', liveActivity.length === 1 ? '1 recent ledger event' : `${liveActivity.length} recent ledger events`);
+    setText('dashboardScheduleAction', todayJobs.length ? `${todayJobs.length} today` : 'Nothing today');
+    setText('dashboardApprovalsAction', pendingApprovals.length ? `${pendingApprovals.length} waiting` : 'Nothing waiting');
+
+    const nextUp = document.getElementById('dashboardNextUp');
+    if (nextUp) nextUp.innerHTML = scheduled.slice(0, 5).map(dashboardEvent).join('') || '<div class="empty"><strong>No scheduled visits</strong><span>Live jobs exist independently from Google Calendar until that integration is approved.</span></div>';
+    const recentActivity = document.getElementById('dashboardRecentActivity');
+    if (recentActivity) recentActivity.innerHTML = liveActivity.slice(0, 3).map(dashboardActivity).join('') || '<div class="empty"><strong>No activity yet</strong><span>The live audit ledger is connected and empty.</span></div>';
+    setText('dashboardActivityBadge', liveActivity.length ? `${liveActivity.length} events` : 'Empty');
+  }
+
+  function showDashboardLoadError() {
+    ['dashboardTodayValue', 'dashboardCustomersValue', 'dashboardApprovalsValue', 'dashboardActivityValue'].forEach(id => setText(id, '—'));
+    ['dashboardTodayNote', 'dashboardCustomersNote', 'dashboardApprovalsNote', 'dashboardActivityNote'].forEach(id => setText(id, 'Live data unavailable'));
+    const message = '<div class="empty"><strong>Live data unavailable</strong><span>Command failed closed. No fixture data was substituted.</span></div>';
+    const nextUp = document.getElementById('dashboardNextUp'); if (nextUp) nextUp.innerHTML = message;
+    const recentActivity = document.getElementById('dashboardRecentActivity'); if (recentActivity) recentActivity.innerHTML = message;
+    setText('dashboardActivityBadge', 'Unavailable');
+  }
+
   function showLoadError(resource) {
     const section = document.querySelector(`[data-section="${resource === 'customers' ? 'customers' : resource}"]`);
     if (!section) return;
@@ -103,10 +162,20 @@
       ['approvals', renderApprovals],
       ['activity', renderActivity],
     ];
-    await Promise.all(resources.map(async ([resource, render]) => {
-      try { render(await load(resource)); }
-      catch (error) { console.warn('command_live_data_load_failed', resource); showLoadError(resource); }
+    const results = await Promise.all(resources.map(async ([resource, render]) => {
+      try {
+        const data = await load(resource);
+        render(data);
+        return [resource, data];
+      } catch (error) {
+        console.warn('command_live_data_load_failed', resource);
+        showLoadError(resource);
+        return null;
+      }
     }));
+    const dashboardData = Object.fromEntries(results.filter(Boolean));
+    if (Object.keys(dashboardData).length === resources.length) renderDashboard(dashboardData);
+    else showDashboardLoadError();
   }
 
   window.addEventListener('DOMContentLoaded', boot, { once: true });
