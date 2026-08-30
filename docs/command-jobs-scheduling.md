@@ -32,6 +32,14 @@ Calendar-backed scheduling fields (`scheduled_start_at`, `scheduled_end_at`, `sc
 
 Run `npm test`, `npm run check`, and `git diff --check`. With an owner-approved clean local database only, apply migrations in timestamp order and run `supabase test db --file supabase/tests/jobs_scheduling_command.sql`. Do not use a connected Supabase project for this feature.
 
+## Calendar operation receipts (Issue #29 prerequisite)
+
+Calendar reschedule and cancellation remain unavailable to Command. The prepared-only receipt migration adds a private `job_operation_receipts` table, uniquely keyed by `(job_id, idempotency_key)`. It records the requested `reschedule` or `cancel` operation, authenticated server actor, correlation ID, expected job version, safe metadata, timestamps, and one of `calendar_pending`, `succeeded`, or `reconciliation_needed`.
+
+Only two security-invoker functions are executable by `service_role`: reserve an operation (including its immutable activity event) and finish it as succeeded or reconciliation-needed (including its activity event). Matching retries return the original receipt; a changed operation, actor, correlation ID, version, or metadata under the same key fails closed. A Calendar rollback failure must use `reconciliation_needed`; it is durable, timestamped, error-coded, and queued for human reconciliation. No browser role can call the table or functions directly, and no Calendar mutation or worker is introduced.
+
+Validate this prerequisite on a clean local database with `supabase test db --file supabase/tests/calendar_operation_receipts.sql`, in addition to the existing suite. Production application, any Calendar worker, and a reschedule/cancel endpoint all require separate owner approval.
+
 ## Application and forward-only rollback
 
 Before any application, the owner must approve the exact migration head, target, backup/restore posture, and maintenance window; verify no writers or Calendar sync worker exists; apply once to a clean non-Production target; then run the pgTAP suite and read-only schema/RLS/grant/index checks. A later live rollout must be separately approved and add only narrow server-side operations with reconciliation and activity logging.
