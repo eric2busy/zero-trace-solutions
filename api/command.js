@@ -24,9 +24,14 @@ module.exports = async function command(req, res) {
   const view = req.query?.view === 'approvals' ? 'approvals.html' : 'index.html';
   const template = await fs.readFile(path.join(process.cwd(), 'command', view), 'utf8');
   const metadata = `<meta name="command-role" content="${identity.role}"><meta name="command-user" content="${escapeHtml(identity.user.email || 'Authorized user')}">`;
+  const liveDataScript = view === 'index.html' ? '<script src="/command/live-data.js" defer></script>' : '';
+  const html = template
+    .replace('<!-- COMMAND_IDENTITY -->', metadata)
+    .replace('</body>', `${liveDataScript}</body>`);
+
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store, private');
   if (identity.cookies) res.setHeader('Set-Cookie', identity.cookies);
-  res.end(template.replace('<!-- COMMAND_IDENTITY -->', metadata));
+  res.end(html);
 };
