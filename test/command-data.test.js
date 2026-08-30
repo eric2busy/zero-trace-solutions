@@ -17,14 +17,14 @@ test('server data layer is disabled without a server-only Supabase key', () => {
 test('server data layer prefers SUPABASE_SECRET_KEY over legacy service-role key', () => {
   setBaseEnv();
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'legacy-key';
-  process.env.SUPABASE_SECRET_KEY = 'secret-key';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   assert.equal(commandData.configured(), true);
-  assert.equal(commandData.serverKey(), 'secret-key');
+  assert.equal(commandData.serverKey(), 'sb_secret_example');
 });
 
-test('REST reads keep the server credential in request headers only', async () => {
+test('modern Supabase secret key is sent only as apikey and never as bearer token', async () => {
   setBaseEnv();
-  process.env.SUPABASE_SECRET_KEY = 'secret-key';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   const originalFetch = global.fetch;
   let observed;
   global.fetch = async (url, options) => {
@@ -36,14 +36,31 @@ test('REST reads keep the server credential in request headers only', async () =
   global.fetch = originalFetch;
 
   assert.equal(observed.url, 'https://example.supabase.co/rest/v1/customers?select=id,display_name');
-  assert.equal(observed.options.headers.apikey, 'secret-key');
-  assert.equal(observed.options.headers.Authorization, 'Bearer secret-key');
-  assert.equal(observed.url.includes('secret-key'), false);
+  assert.equal(observed.options.headers.apikey, 'sb_secret_example');
+  assert.equal(observed.options.headers.Authorization, undefined);
+  assert.equal(observed.url.includes('sb_secret_example'), false);
+});
+
+test('legacy service-role key remains supported as bearer JWT', async () => {
+  setBaseEnv();
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'legacy-service-role-jwt';
+  const originalFetch = global.fetch;
+  let observed;
+  global.fetch = async (url, options) => {
+    observed = { url, options };
+    return { ok: true, json: async () => [] };
+  };
+
+  await commandData.readJson('customers?select=id');
+  global.fetch = originalFetch;
+
+  assert.equal(observed.options.headers.apikey, 'legacy-service-role-jwt');
+  assert.equal(observed.options.headers.Authorization, 'Bearer legacy-service-role-jwt');
 });
 
 test('customer read contract excludes contact PII and returns canonical customers and organizations', async () => {
   setBaseEnv();
-  process.env.SUPABASE_SECRET_KEY = 'secret-key';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   const originalFetch = global.fetch;
   const urls = [];
   global.fetch = async url => {
@@ -62,7 +79,7 @@ test('customer read contract excludes contact PII and returns canonical customer
 
 test('jobs read contract exposes schedule and active assignments without note bodies', async () => {
   setBaseEnv();
-  process.env.SUPABASE_SECRET_KEY = 'secret-key';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   const originalFetch = global.fetch;
   const urls = [];
   global.fetch = async url => {
@@ -82,7 +99,7 @@ test('jobs read contract exposes schedule and active assignments without note bo
 
 test('approval read contract includes immutable decision receipts and exact payload summaries', async () => {
   setBaseEnv();
-  process.env.SUPABASE_SECRET_KEY = 'secret-key';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   const originalFetch = global.fetch;
   const urls = [];
   global.fetch = async url => {
@@ -100,7 +117,7 @@ test('approval read contract includes immutable decision receipts and exact payl
 
 test('activity read contract excludes metadata payloads and returns audit identifiers', async () => {
   setBaseEnv();
-  process.env.SUPABASE_SECRET_KEY = 'secret-key';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   const originalFetch = global.fetch;
   let observed = '';
   global.fetch = async url => {
