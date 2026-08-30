@@ -84,6 +84,9 @@ test.beforeEach(() => {
   process.env.RESEND_API_KEY = 'test-resend-key';
   delete process.env.BOOKING_TIMEZONE;
   delete process.env.GOOGLE_CALENDAR_ID;
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_SECRET_KEY;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 });
 
 test.afterEach(() => {
@@ -92,6 +95,9 @@ test.afterEach(() => {
   delete process.env.GOOGLE_CLIENT_EMAIL;
   delete process.env.GOOGLE_PRIVATE_KEY;
   delete process.env.RESEND_API_KEY;
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_SECRET_KEY;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 });
 
 test('serializes the selected slot in the Notion-supported timezone format', () => {
@@ -127,6 +133,7 @@ test('finalizes Notion, preserves Calendar timing, sends emails, and returns suc
     calendarEventId: 'calendar-event-id',
     start: START,
     end: END,
+    commandSync: { state: 'pending', reason: 'not_configured' },
     emailDelivery: {
       customer: { sent: true, state: 'sent', reason: 'accepted', providerStatus: 200 },
       internal: { sent: true, state: 'sent', reason: 'accepted', providerStatus: 200 },
@@ -159,6 +166,7 @@ test('keeps a finalized booking successful when email delivery fails', async () 
   await handler(request(), res);
 
   assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body.commandSync, { state: 'pending', reason: 'not_configured' });
   assert.deepEqual(res.body.emailDelivery, {
     customer: { sent: false, state: 'failed', reason: 'request_failed' },
     internal: { sent: false, state: 'failed', reason: 'request_failed' },
