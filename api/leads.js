@@ -8,6 +8,7 @@
 const DATABASE_ID = process.env.NOTION_DATABASE_ID || '896228ea48af4523a8cb0f099ca800c2';
 const NOTION_VERSION = '2022-06-28';
 const { sendTransactionalEmail } = require('./_email');
+const { mirrorLeadToCommand } = require('./_lib/lead-command-sync');
 
 function corsHeaders(origin) {
   const allowed = ['https://zerotraceusa.com','https://www.zerotraceusa.com','https://zero-trace-solutions.vercel.app','http://localhost:3000','http://127.0.0.1:3000'];
@@ -115,6 +116,7 @@ module.exports = async function handler(req, res) {
     }
 
     const fields = { name, phone, email, businessType, preferredDate, preferredTime, location, notes };
+    const commandSync = await mirrorLeadToCommand(fields, data.id);
     const emailDelivery = {
       internal: await sendLeadAlert(fields),
       customer: await sendClientConfirmation(fields),
@@ -126,6 +128,7 @@ module.exports = async function handler(req, res) {
       emailSent: emailDelivery.internal.sent || undefined,
       clientEmailSent: emailDelivery.customer.sent || undefined,
       emailDelivery,
+      commandSync: commandSync.state,
       next: 'select_available_slot',
     }, origin);
   } catch (err) {
