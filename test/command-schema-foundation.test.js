@@ -47,3 +47,20 @@ test('customers and companies migration is scoped, private, and covered by pgTAP
   assert.match(crmMigration, /command_is_iana_timezone/);
   assert.match(crmTest, /'a service location rejects a customer from another organization'/);
 });
+
+test('jobs and scheduling migration is private, auditable, and calendar-fixture-only', () => {
+  const jobsMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260830010000_jobs_scheduling_command.sql'), 'utf8');
+  const jobsTest = fs.readFileSync(path.join(root, 'supabase/tests/jobs_scheduling_command.sql'), 'utf8');
+  for (const table of ['jobs', 'job_assignments', 'job_notes']) {
+    assert.match(jobsMigration, new RegExp(`create table public\\.${table} \\(`));
+    assert.match(jobsMigration, new RegExp(`alter table public\\.${table} enable row level security`));
+  }
+  assert.match(jobsMigration, /revoke all on table public\.jobs, public\.job_assignments, public\.job_notes from anon, authenticated/);
+  assert.match(jobsMigration, /raw_app_meta_data|app metadata|app_metadata/i);
+  assert.match(jobsMigration, /Google Calendar remains scheduling authority/);
+  assert.match(jobsMigration, /job notes are immutable/);
+  assert.match(jobsMigration, /scheduled_timezone/);
+  assert.doesNotMatch(jobsMigration, /googleapis|calendar\.events|fetch\(/i);
+  assert.match(jobsTest, /select plan\(31\)/);
+  assert.match(jobsTest, /a scheduled job accepts matching customer, organization, location, and timezone/);
+});
