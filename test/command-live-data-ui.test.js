@@ -24,6 +24,26 @@ test('live UI explicitly loads all current read-only operational resources', () 
   }
 });
 
+test('Home dashboard derives its live summary from the existing authenticated resources', () => {
+  assert.match(ui, /function renderDashboard/);
+  for (const resource of ['customers', 'jobs', 'approvals', 'activity']) {
+    assert.match(ui, new RegExp(`['"]${resource}['"]`));
+  }
+  assert.match(ui, /dashboardNextUp/);
+  assert.match(ui, /dashboardRecentActivity/);
+  assert.match(ui, /dashboardCustomersValue/);
+  assert.match(ui, /dashboardApprovalsValue/);
+});
+
+test('Home template contains live placeholders instead of dashboard fixture values', () => {
+  const home = fs.readFileSync(path.join(root, 'command', 'index.html'), 'utf8');
+  const dashboard = home.match(/<section class="section active" data-section="today">([\s\S]*?)<section class="section" data-section="schedule">/)?.[1] || '';
+  assert.match(home, /id="dashboardTodayValue">—/);
+  assert.match(home, /id="dashboardNextUp"/);
+  assert.doesNotMatch(dashboard, /BrightWorks Dental|Northlake Pediatrics|Horizon Wellness/);
+  assert.doesNotMatch(dashboard, /Static prototype · no real customer data/);
+});
+
 test('live UI fails closed rather than substituting fixture data after a data error', () => {
   assert.match(ui, /Command failed closed\. No fixture data was substituted\./);
 });
