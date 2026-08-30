@@ -21,7 +21,8 @@ module.exports = async function command(req, res) {
     return res.end();
   }
 
-  const template = await fs.readFile(path.join(process.cwd(), 'command', 'index.html'), 'utf8');
+  const view = req.query?.view === 'approvals' ? 'approvals.html' : 'index.html';
+  const template = await fs.readFile(path.join(process.cwd(), 'command', view), 'utf8');
   const metadata = `<meta name="command-role" content="${identity.role}"><meta name="command-user" content="${escapeHtml(identity.user.email || 'Authorized user')}">`;
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
