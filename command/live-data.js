@@ -78,7 +78,12 @@
   function renderActivity(data) {
     const section = document.querySelector('[data-section="activity"]');
     if (!section) return;
-    const rows = (data.activity || []).map(item => `<div class="list-row"><div class="row-icon">${item.actor_kind === 'human' ? 'HU' : 'AI'}</div><div><div class="row-name">${escapeHtml(titleCase(item.action))}</div><div class="row-sub">${escapeHtml(item.actor_name || titleCase(item.actor_kind))} · ${escapeHtml(titleCase(item.target_type))} · ${escapeHtml(formatDate(item.created_at))}</div></div><span class="badge ${badgeClass(item.authority_level)}">${escapeHtml(titleCase(item.authority_level))}</span></div>`).join('');
+    const rows = (data.activity || []).map(item => {
+      const actor = item.actors || {};
+      const marker = actor.kind === 'human' ? 'HU' : actor.kind === 'service' ? 'SV' : 'AI';
+      const actorName = actor.display_name || titleCase(actor.kind) || 'Activity actor';
+      return `<div class="list-row"><div class="row-icon">${marker}</div><div><div class="row-name">${escapeHtml(titleCase(item.action))}</div><div class="row-sub">${escapeHtml(actorName)} · ${escapeHtml(titleCase(item.target_type))} · ${escapeHtml(formatDate(item.created_at))}</div></div><span class="badge ${badgeClass(item.authority_level)}">${escapeHtml(titleCase(item.authority_level))}</span></div>`;
+    }).join('');
     section.innerHTML = `<div class="section-header"><div class="eyebrow">Oversight · Live read-only</div><h2>AI Activity</h2><p>A human-readable view of the canonical activity ledger.</p></div><div class="card panel">${rows || '<div class="empty"><strong>No activity yet</strong><span>The live audit ledger is connected and empty.</span></div>'}</div>`;
   }
 

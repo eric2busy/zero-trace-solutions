@@ -97,7 +97,7 @@ test('jobs read contract exposes schedule and active assignments without note bo
   assert.equal(urls.some(url => url.includes('service_details')), false);
 });
 
-test('approval read contract includes immutable decision receipts and exact payload summaries', async () => {
+test('approval read contract returns decision receipts without payload summaries', async () => {
   setBaseEnv();
   process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   const originalFetch = global.fetch;
@@ -111,11 +111,12 @@ test('approval read contract includes immutable decision receipts and exact payl
   global.fetch = originalFetch;
 
   assert.deepEqual(result, { approvals: [], decisions: [] });
-  assert.equal(urls.some(url => url.includes('proposed_payload_summary')), true);
-  assert.equal(urls.some(url => url.includes('effective_payload_summary')), true);
+  assert.equal(urls.some(url => url.includes('proposed_payload_summary')), false);
+  assert.equal(urls.some(url => url.includes('decision_summary')), false);
+  assert.equal(urls.some(url => url.includes('effective_payload_summary')), false);
 });
 
-test('activity read contract excludes metadata payloads and returns audit identifiers', async () => {
+test('activity read contract excludes metadata payloads and returns attributable actors', async () => {
   setBaseEnv();
   process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   const originalFetch = global.fetch;
@@ -131,4 +132,5 @@ test('activity read contract excludes metadata payloads and returns audit identi
   assert.deepEqual(result, { activity: [] });
   assert.equal(observed.includes('correlation_id'), true);
   assert.equal(observed.includes('metadata'), false);
+  assert.equal(observed.includes('actors!activity_events_actor_id_fkey(kind,display_name)'), true);
 });

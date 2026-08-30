@@ -69,13 +69,15 @@ async function listJobs() {
 }
 
 async function listApprovals() {
-  const approvals = await readJson('approvals?select=id,requested_by_actor_id,decided_by_actor_id,action_type,target_type,target_id,authority_level,policy_basis,rationale,proposed_payload_summary,decision_summary,status,correlation_id,requested_at,decided_at,expires_at,updated_at&order=requested_at.desc&limit=100');
-  const decisions = await readJson('approval_decisions?select=id,approval_id,decided_by_actor_id,decision,authority_basis,rationale,effective_payload_summary,correlation_id,created_at&order=created_at.desc&limit=100');
+  // Payload summaries can contain customer or operational details. The current
+  // read-only Command surfaces do not render them, so do not transmit them.
+  const approvals = await readJson('approvals?select=id,requested_by_actor_id,decided_by_actor_id,action_type,target_type,target_id,authority_level,policy_basis,rationale,status,correlation_id,requested_at,decided_at,expires_at,updated_at&order=requested_at.desc&limit=100');
+  const decisions = await readJson('approval_decisions?select=id,approval_id,decided_by_actor_id,decision,authority_basis,rationale,correlation_id,created_at&order=created_at.desc&limit=100');
   return { approvals, decisions };
 }
 
 async function listActivity() {
-  const activity = await readJson('activity_events?select=id,actor_id,action,target_type,target_id,authority_level,approval_id,correlation_id,outcome,error_code,created_at&order=created_at.desc&limit=100');
+  const activity = await readJson('activity_events?select=id,actor_id,action,target_type,target_id,authority_level,approval_id,correlation_id,outcome,error_code,created_at,actors!activity_events_actor_id_fkey(kind,display_name)&order=created_at.desc&limit=100');
   return { activity };
 }
 
