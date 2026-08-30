@@ -4,13 +4,13 @@ Status: prepared repository foundation for Issue #27. No Supabase migration has 
 
 ## Purpose
 
-The Approval Center is the owner-control boundary for consequential Yellow actions. Green work may continue only where company policy already allows it. Red actions remain prohibited or human-only. A Yellow action must stop until the exact action and target have a valid approval that can be verified server-side.
+The Approval Center is the owner-control boundary for consequential Yellow actions. Green work may continue only where company policy already allows it. Red actions remain prohibited or human-only. A Yellow action must stop until the exact action, target, and payload have a valid approval that can be verified server-side.
 
 ## Record model
 
 The existing `approvals` table is the current-state request record. It captures requester identity, action and target, Yellow authority level, policy basis, rationale, proposed payload summary, correlation/idempotency identity, optional expiry, and terminal status.
 
-Issue #27 adds `approval_decisions` as an append-only terminal receipt. Each approval can have exactly one terminal decision receipt. The receipt records the deciding actor, approved/rejected/modified/expired/cancelled decision, authority basis, owner-facing rationale, effective payload summary, and correlation identity. Historical receipts cannot be edited or deleted; a changed decision requires a new approval request.
+Issue #27 adds `approval_decisions` as an append-only terminal receipt. Each approval can have exactly one terminal decision receipt. The receipt records the deciding actor, approved/rejected/modified/expired/cancelled decision, authority basis, owner-facing rationale, effective payload summary, and correlation identity. Historical receipts cannot be edited or deleted; a changed decision requires a new approval request. A database insert guard rejects any decision receipt whose terminal state, deciding actor, or correlation identity contradicts the approval record.
 
 ## Fail-closed execution seam
 
@@ -20,17 +20,20 @@ Issue #27 adds `approval_decisions` as an append-only terminal receipt. Each app
 - status is `approved` or `modified`;
 - action type matches exactly;
 - target type and target id match exactly;
+- the caller supplies an object payload summary;
+- for `approved`, that payload exactly matches the original proposed payload summary;
+- for `modified`, that payload exactly matches the immutable decision receipt's effective payload summary;
 - the approval has not expired;
 - an immutable decision receipt exists;
 - the receipt decision, deciding actor, and correlation id match the approval projection.
 
-The function does not execute anything. Browser roles are denied access to the underlying records and helper. A future operations API must perform authorization separately using trusted `app_metadata` / `command_roles`, call the validation seam, execute at most the approved effective action, and append an `activity_events` receipt.
+The function does not execute anything. Browser roles are denied access to the underlying records and helper. A future operations API must perform authorization separately using trusted `app_metadata` / `command_roles`, derive the summary from the exact action it intends to execute, call the validation seam, execute at most that verified payload, and append an `activity_events` receipt.
 
-Missing, expired, cancelled, rejected, mismatched, or unverifiable approvals fail closed.
+Missing, expired, cancelled, rejected, mismatched, payload-divergent, or unverifiable approvals fail closed.
 
 ## Modify semantics
 
-`modified` is a terminal approval decision for a narrowed or changed effective payload. The original proposal is not authorized. The future executor must use the decision receipt's effective payload summary as an audit/control input and must never silently execute the original request when the owner approved a modification.
+`modified` is a terminal approval decision for a narrowed or changed effective payload. The original proposal is not authorized. The validation seam accepts a modified approval only when the proposed execution summary exactly matches the decision receipt's effective payload summary. This prevents a later executor from treating a modified approval as authorization for the original proposal.
 
 ## Expiry and cancellation
 
@@ -70,9 +73,10 @@ Database behavior when a permitted local PostgreSQL/Supabase runtime is availabl
 
 - apply migrations through `20260830022000_approvals_exceptions_command.sql` to a disposable local database;
 - run `supabase/tests/approvals_exceptions_command.sql` with pgTAP;
-- confirm matching approved actions validate true;
-- confirm mismatched action/target, expired/rejected/cancelled/missing approvals validate false;
-- confirm decision receipt update/delete and duplicate terminal receipt attempts fail.
+- confirm matching approved action/target/payload validates true;
+- confirm modified approvals validate only the owner-selected effective payload;
+- confirm mismatched action/target/payload, expired/rejected/cancelled/missing approvals validate false;
+- confirm contradictory decision insert, receipt update/delete, and duplicate terminal receipt attempts fail.
 
 ## Rollback posture
 
