@@ -1,5 +1,5 @@
 begin;
-select plan(21);
+select plan(22);
 
 select has_table('public', 'approval_decisions');
 select col_is_pk('public', 'approval_decisions', 'id');
@@ -21,6 +21,29 @@ select lives_ok($$
     ('70000000-0000-0000-0000-000000000001', 'agent', 'Fixture requester', 'fixture-requester'),
     ('70000000-0000-0000-0000-000000000002', 'service', 'Fixture owner proxy', 'fixture-owner-proxy');
 $$, 'fixture attribution actors satisfy foundation constraints');
+
+select throws_ok($$
+  insert into public.approvals (
+    id, requested_by_actor_id, decided_by_actor_id, action_type, target_type,
+    authority_level, policy_basis, rationale, status, correlation_id,
+    idempotency_key, decided_at, decision_summary
+  ) values (
+    '71000000-0000-0000-0000-000000000002',
+    '70000000-0000-0000-0000-000000000001',
+    '70000000-0000-0000-0000-000000000002',
+    'discount', 'proposal', 'yellow', 'discount requires owner approval',
+    'Fixture rejected request', 'rejected', '72000000-0000-0000-0000-000000000002',
+    'approval-fixture-2', now(), '{"approved":false}'::jsonb
+  );
+  insert into public.approval_decisions (
+    approval_id, decided_by_actor_id, decision, authority_basis, rationale, correlation_id
+  ) values (
+    '71000000-0000-0000-0000-000000000002',
+    '70000000-0000-0000-0000-000000000002', 'approved',
+    'wrong fixture decision', 'wrong fixture decision',
+    '72000000-0000-0000-0000-000000000002'
+  );
+$$, 'P0001', 'approval decision must match terminal approval state', 'contradictory decision receipt is rejected');
 
 select lives_ok($$
   insert into public.approvals (
