@@ -1,6 +1,7 @@
 {
-  "functions": { "api/command.js": { "includeFiles": "command/index.html" } },
+  "functions": { "api/command.js": { "includeFiles": "command/*.html" } },
   "routes": [
+    { "src": "/command/approvals(?:\\.html)?/?", "dest": "/api/command?view=approvals" },
     { "src": "/command/?", "dest": "/api/command" },
     { "src": "/command/index\\.html", "dest": "/api/command" },
     { "handle": "filesystem" }
