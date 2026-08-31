@@ -1,7 +1,16 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const commandHealth = require('../api/_lib/command-health');
 const commandData = require('../api/_lib/command-data');
+
+test('health resource stays behind the existing Command read-role gate', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../api/command-data.js'), 'utf8');
+  assert.match(source, /const READ_ROLES = new Set\(\['owner', 'admin', 'operator'\]\)/);
+  assert.match(source, /health:\s*commandHealth\.listHealth/);
+  assert.equal(source.includes("'technician'"), false);
+});
 
 test('job summary groups states and returns the next upcoming job', () => {
   const now = new Date('2026-08-31T08:00:00.000Z');
