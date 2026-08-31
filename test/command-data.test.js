@@ -58,6 +58,25 @@ test('legacy service-role key remains supported as bearer JWT', async () => {
   assert.equal(observed.options.headers.Authorization, 'Bearer legacy-service-role-jwt');
 });
 
+test('a read retries one isolated upstream 401 but preserves persistent failure metadata', async () => {
+  setBaseEnv();
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    return calls === 1
+      ? { ok: false, status: 401, json: async () => ({ message: 'unauthorized' }) }
+      : { ok: true, status: 200, json: async () => [{ id: 'customer-1' }] };
+  };
+  assert.deepEqual(await commandData.readJson('customers?select=id'), [{ id: 'customer-1' }]);
+  assert.equal(calls, 2);
+
+  global.fetch = async () => ({ ok: false, status: 401, json: async () => ({ message: 'unauthorized' }) });
+  await assert.rejects(commandData.readJson('customers?select=id'), error => error.code === 'COMMAND_DATA_QUERY_FAILED' && error.status === 401 && error.upstreamStatus === 401);
+  global.fetch = originalFetch;
+});
+
 test('customer read contract excludes contact PII and returns canonical customers and organizations', async () => {
   setBaseEnv();
   process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';

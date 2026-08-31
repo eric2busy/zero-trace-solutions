@@ -1,5 +1,6 @@
 const { authenticatedCommandUser } = require('./_lib/command-auth');
 const commandData = require('./_lib/command-data');
+const commandHealth = require('./_lib/command-health');
 
 const READ_ROLES = new Set(['owner', 'admin', 'operator']);
 const CUSTOMER_WRITE_ROLES = new Set(['owner', 'admin']);
@@ -8,6 +9,7 @@ const RESOURCES = {
   jobs: commandData.listJobs,
   approvals: commandData.listApprovals,
   activity: commandData.listActivity,
+  health: commandHealth.listHealth,
 };
 
 function sendJson(res, statusCode, body) {

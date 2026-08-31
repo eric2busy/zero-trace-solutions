@@ -47,12 +47,17 @@ async function restRequest(path, options = {}) {
 }
 
 async function readJson(path) {
-  const response = await restRequest(path);
+  let response = await restRequest(path);
+  // A GET is safe to retry once. This gives an isolated upstream auth edge a
+  // chance to recover (for example during key propagation) without retrying
+  // any mutation or obscuring a persistent credential problem.
+  if (response.status === 401) response = await restRequest(path);
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
     const error = new Error('Command data query failed.');
     error.code = 'COMMAND_DATA_QUERY_FAILED';
     error.status = response.status;
+    error.upstreamStatus = response.status;
     throw error;
   }
   return payload;
