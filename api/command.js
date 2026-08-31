@@ -25,7 +25,7 @@ module.exports = async function command(req, res) {
   const template = await fs.readFile(path.join(process.cwd(), 'command', view), 'utf8');
   const metadata = `<meta name="command-role" content="${identity.role}"><meta name="command-user" content="${escapeHtml(identity.user.email || 'Authorized user')}">`;
   const commandScripts = view === 'index.html'
-    ? '<script src="/command/live-data.js" defer></script><script src="/command/customer-editing.js" defer></script><script src="/command/job-editing.js" defer></script><script src="/command/calendar-operations.js" defer></script>'
+    ? '<script src="/command/live-data.js" defer></script><script src="/command/health-live.js" defer></script><script src="/command/customer-editing.js" defer></script><script src="/command/job-editing.js" defer></script><script src="/command/calendar-operations.js" defer></script>'
     : '';
   const html = template
     .replace('<!-- COMMAND_IDENTITY -->', metadata)
