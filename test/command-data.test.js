@@ -77,7 +77,7 @@ test('a read retries one isolated upstream 401 but preserves persistent failure 
   global.fetch = originalFetch;
 });
 
-test('customer read contract excludes contact PII and returns canonical customers and organizations', async () => {
+test('customer read contract excludes contact PII and returns canonical customers, organizations, and minimal service-location context', async () => {
   setBaseEnv();
   process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   const originalFetch = global.fetch;
@@ -90,13 +90,17 @@ test('customer read contract excludes contact PII and returns canonical customer
   const result = await commandData.listCustomers();
   global.fetch = originalFetch;
 
-  assert.deepEqual(result, { customers: [], organizations: [] });
-  assert.equal(urls.length, 2);
+  assert.deepEqual(result, { customers: [], organizations: [], locations: [] });
+  assert.equal(urls.length, 3);
   assert.equal(urls.some(url => url.includes('customer_contacts')), false);
   assert.equal(urls.every(url => !url.includes('normalized_value')), true);
+  const locationRead = urls.find(url => url.includes('/service_locations?'));
+  assert.ok(locationRead);
+  assert.match(locationRead, /select=id,customer_id,organization_id,label,city,region,timezone,updated_at/);
+  assert.doesNotMatch(locationRead, /address_line_1|postal_code/);
 });
 
-test('jobs read contract exposes schedule and active assignments without note bodies', async () => {
+test('jobs read contract exposes schedule, active assignments, and minimal location context without note bodies', async () => {
   setBaseEnv();
   process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   const originalFetch = global.fetch;
@@ -109,9 +113,13 @@ test('jobs read contract exposes schedule and active assignments without note bo
   const result = await commandData.listJobs();
   global.fetch = originalFetch;
 
-  assert.deepEqual(result, { jobs: [], assignments: [] });
+  assert.deepEqual(result, { jobs: [], assignments: [], locations: [] });
   assert.equal(urls.some(url => url.includes('/jobs?')), true);
   assert.equal(urls.some(url => url.includes('/job_assignments?')), true);
+  const locationRead = urls.find(url => url.includes('/service_locations?'));
+  assert.ok(locationRead);
+  assert.match(locationRead, /select=id,label,city,region,timezone/);
+  assert.doesNotMatch(locationRead, /address_line_1|postal_code/);
   assert.equal(urls.some(url => url.includes('job_notes')), false);
   assert.equal(urls.some(url => url.includes('service_details')), false);
 });

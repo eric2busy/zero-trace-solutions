@@ -24,6 +24,13 @@ test('live UI explicitly loads all current read-only operational resources', () 
   }
 });
 
+test('live UI renders service-location context without street-address fields or direct database access', () => {
+  assert.match(ui, /function locationLabel/);
+  assert.match(ui, /service location/);
+  assert.match(ui, /locationLabel\(job, locationsById\)/);
+  assert.doesNotMatch(ui, /address_line_1|postal_code/);
+});
+
 test('Home dashboard derives its live summary from the existing authenticated resources', () => {
   assert.match(ui, /function renderDashboard/);
   for (const resource of ['customers', 'jobs', 'approvals', 'activity']) {

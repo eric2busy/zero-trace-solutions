@@ -29,10 +29,21 @@
     const list = document.getElementById('customerList');
     if (!section || !list) return;
     const orgById = new Map((data.organizations || []).map(org => [org.id, org]));
+    const locationsByCustomerId = new Map();
+    for (const location of data.locations || []) {
+      if (!location.customer_id) continue;
+      const locations = locationsByCustomerId.get(location.customer_id) || [];
+      locations.push(location);
+      locationsByCustomerId.set(location.customer_id, locations);
+    }
     const rows = (data.customers || []).map(customer => {
       const org = orgById.get(customer.organization_id);
-      const search = [customer.display_name, customer.status, org?.display_name, org?.legal_name].filter(Boolean).join(' ').toLowerCase();
-      return `<div class="list-row" data-search="${escapeHtml(search)}"><div class="row-icon">${escapeHtml(initials(customer.display_name))}</div><div><div class="row-name">${escapeHtml(customer.display_name)}</div><div class="row-sub">${escapeHtml(org?.display_name || 'Individual customer')} · ${escapeHtml(titleCase(customer.status))}</div></div><span class="chev">›</span></div>`;
+      const locations = locationsByCustomerId.get(customer.id) || [];
+      const locationSummary = locations.length
+        ? `${locations.length} ${locations.length === 1 ? 'service location' : 'service locations'} · ${locations.slice(0, 2).map(location => [location.city, location.region].filter(Boolean).join(', ')).filter(Boolean).join(' · ')}`
+        : 'No service location';
+      const search = [customer.display_name, customer.status, org?.display_name, org?.legal_name, ...locations.flatMap(location => [location.label, location.city, location.region])].filter(Boolean).join(' ').toLowerCase();
+      return `<div class="list-row" data-search="${escapeHtml(search)}"><div class="row-icon">${escapeHtml(initials(customer.display_name))}</div><div><div class="row-name">${escapeHtml(customer.display_name)}</div><div class="row-sub">${escapeHtml(org?.display_name || 'Individual customer')} · ${escapeHtml(titleCase(customer.status))}</div><div class="row-sub">${escapeHtml(locationSummary)}</div></div><span class="chev">›</span></div>`;
     }).join('');
     list.innerHTML = rows || '<div class="empty"><strong>No customers yet</strong><span>Live Supabase is connected; no canonical customer records have been added yet.</span></div>';
     const panel = section.querySelector('.panel-head');
@@ -40,19 +51,26 @@
     section.querySelector('.section-header .eyebrow').textContent = 'CRM · Live read-only';
   }
 
-  function jobRow(job, index) {
-    return `<div class="list-row"><div class="row-icon">${String(index + 1).padStart(2, '0')}</div><div><div class="row-name">${escapeHtml(job.title)}</div><div class="row-sub">${escapeHtml(formatDate(job.scheduled_start_at))} · ${escapeHtml(titleCase(job.kind))} · ${escapeHtml(titleCase(job.source_system))}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div>`;
+  function locationLabel(job, locationsById) {
+    const location = locationsById.get(job.service_location_id);
+    if (!location) return 'Location pending';
+    return [location.label, [location.city, location.region].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || 'Location pending';
+  }
+
+  function jobRow(job, index, locationsById) {
+    return `<div class="list-row"><div class="row-icon">${String(index + 1).padStart(2, '0')}</div><div><div class="row-name">${escapeHtml(job.title)}</div><div class="row-sub">${escapeHtml(formatDate(job.scheduled_start_at))} · ${escapeHtml(titleCase(job.kind))} · ${escapeHtml(titleCase(job.source_system))}</div><div class="row-sub">${escapeHtml(locationLabel(job, locationsById))}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div>`;
   }
 
   function renderJobs(data) {
     const jobs = data.jobs || [];
+    const locationsById = new Map((data.locations || []).map(location => [location.id, location]));
     const active = jobs.filter(job => !['completed', 'cancelled'].includes(job.status));
     const history = jobs.filter(job => ['completed', 'cancelled'].includes(job.status));
     const section = document.querySelector('[data-section="jobs"]');
     if (section) {
       const panels = section.querySelectorAll('.card.panel');
-      if (panels[0]) panels[0].innerHTML = `<div class="panel-head"><div class="panel-title">Active work</div><span class="badge green">${active.length} active</span></div>${active.map(jobRow).join('') || '<div class="empty"><strong>No active jobs</strong><span>Live canonical jobs will appear here.</span></div>'}`;
-      if (panels[1]) panels[1].innerHTML = `<div class="panel-head"><div class="panel-title">Lifecycle history</div><span class="badge gray">Live</span></div>${history.map(jobRow).join('') || '<div class="empty"><strong>No completed or cancelled jobs</strong><span>History will appear here as work progresses.</span></div>'}`;
+      if (panels[0]) panels[0].innerHTML = `<div class="panel-head"><div class="panel-title">Active work</div><span class="badge green">${active.length} active</span></div>${active.map((job, index) => jobRow(job, index, locationsById)).join('') || '<div class="empty"><strong>No active jobs</strong><span>Live canonical jobs will appear here.</span></div>'}`;
+      if (panels[1]) panels[1].innerHTML = `<div class="panel-head"><div class="panel-title">Lifecycle history</div><span class="badge gray">Live</span></div>${history.map((job, index) => jobRow(job, index, locationsById)).join('') || '<div class="empty"><strong>No completed or cancelled jobs</strong><span>History will appear here as work progresses.</span></div>'}`;
       section.querySelector('.section-header .eyebrow').textContent = 'Field work · Live read-only';
       const note = section.querySelector('.prototype-note'); if (note) note.textContent = 'Live Supabase job records · operational writes remain disabled';
     }
@@ -61,7 +79,7 @@
     if (schedule) {
       const timeline = schedule.querySelector('.timeline');
       const scheduled = active.filter(job => job.scheduled_start_at).sort((a, b) => new Date(a.scheduled_start_at) - new Date(b.scheduled_start_at));
-      if (timeline) timeline.innerHTML = scheduled.map(job => `<div class="event"><div class="event-time">${escapeHtml(new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(job.scheduled_start_at)))}</div><div><div class="event-name">${escapeHtml(job.title)}</div><div class="event-meta">${escapeHtml(titleCase(job.kind))} · ${escapeHtml(job.scheduled_timezone || 'Timezone pending')}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div>`).join('') || '<div class="empty"><strong>No scheduled visits</strong><span>Live jobs exist independently from Google Calendar until that integration is approved.</span></div>';
+      if (timeline) timeline.innerHTML = scheduled.map(job => `<div class="event"><div class="event-time">${escapeHtml(new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(job.scheduled_start_at)))}</div><div><div class="event-name">${escapeHtml(job.title)}</div><div class="event-meta">${escapeHtml(locationLabel(job, locationsById))} · ${escapeHtml(titleCase(job.kind))} · ${escapeHtml(job.scheduled_timezone || 'Timezone pending')}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div>`).join('') || '<div class="empty"><strong>No scheduled visits</strong><span>Live jobs exist independently from Google Calendar until that integration is approved.</span></div>';
       schedule.querySelector('.section-header .eyebrow').textContent = 'Operations · Live read-only';
       const note = schedule.querySelector('.prototype-note'); if (note) note.textContent = 'Live Supabase schedule projection · Google Calendar remains disconnected';
     }
