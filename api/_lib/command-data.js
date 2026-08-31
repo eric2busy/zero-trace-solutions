@@ -276,4 +276,5 @@ module.exports = {
   updateJob,
   validateCustomerPatch,
   validateJobPatch,
+  writeJson,
 };
