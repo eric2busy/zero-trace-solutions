@@ -11,6 +11,7 @@ module.exports = async function commandCalendar(req, res) {
     const result = await executeCalendarOperation({ role: identity.role, authUserId: identity.user.id, input });
     if (result.state === 'not_found') return send(res, 404, { error: 'job_not_found' });
     if (result.state === 'stale') return send(res, 409, { error: 'stale_job_version', currentVersion: result.currentVersion });
+    if (result.state === 'reconciliation_needed') return send(res, 409, { error: 'reconciliation_needed', correlationId: result.correlationId || null });
     return send(res, 200, { ok: true, ...result });
   } catch (error) { return send(res, error.status || 502, { error: error.code || 'calendar_command_failed', correlationId: error.correlationId || null }); }
 };

@@ -70,7 +70,15 @@ async function executeCalendarOperation({ role, authUserId, input, calendar = nu
   const reservation = await receipts.reserveOperation({ jobId: request.jobId, idempotencyKey: request.idempotencyKey, operation: request.operation, actorId, correlationId, expectedJobVersion: request.version, metadata: { operation: request.operation } });
   const receipt = reservation?.[0];
   if (!receipt?.receipt_id) fail('receipt_reservation_failed', 502);
-  if (receipt.replayed && receipt.state !== 'calendar_pending') return { state: receipt.state, replayed: true, correlationId: receipt.correlation_id };
+  if (receipt.replayed) {
+    if (receipt.state === 'calendar_pending') {
+      // The original provider request may have completed despite a lost
+      // response. Never issue a second Calendar mutation for the same key.
+      await receipts.markOperationForReconciliation({ receiptId: receipt.receipt_id, actorId, errorCode: 'idempotency_replay_requires_reconciliation' });
+      return { state: 'reconciliation_needed', replayed: true, correlationId: receipt.correlation_id };
+    }
+    return { state: receipt.state, replayed: true, correlationId: receipt.correlation_id };
+  }
   const calendarId = process.env.GOOGLE_CALENDAR_ID || 'mock-calendar';
   let before;
   try {
