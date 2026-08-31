@@ -32,3 +32,12 @@ test('terminal operation helpers persist success or reconciliation through the n
     { p_receipt_id: 'receipt-id', p_actor_id: 'actor-id', p_state: 'reconciliation_needed', p_error_code: 'calendar_rollback_failed' },
   ]);
 });
+
+test('atomic completion uses the dedicated server-only RPC with schedule values', async () => {
+  setServerEnv(); const originalFetch = global.fetch; let observed;
+  global.fetch = async (url, options) => { observed = { url, body: JSON.parse(options.body) }; return { ok: true, json: async () => [] }; };
+  await receipts.completeOperation({ receiptId: 'receipt-id', actorId: 'actor-id', scheduledStartAt: '2026-09-01T17:00:00.000Z', scheduledEndAt: '2026-09-01T18:00:00.000Z', scheduledTimezone: 'America/Los_Angeles' });
+  global.fetch = originalFetch;
+  assert.match(observed.url, /rpc\/command_complete_job_calendar_operation$/);
+  assert.deepEqual(observed.body, { p_receipt_id: 'receipt-id', p_actor_id: 'actor-id', p_scheduled_start_at: '2026-09-01T17:00:00.000Z', p_scheduled_end_at: '2026-09-01T18:00:00.000Z', p_scheduled_timezone: 'America/Los_Angeles' });
+});

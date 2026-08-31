@@ -274,6 +274,7 @@ module.exports = {
   serverKey,
   updateCustomer,
   updateJob,
+  actorForAuthUser,
   validateCustomerPatch,
   validateJobPatch,
   writeJson,
