@@ -85,13 +85,17 @@ async function writeJson(path, method, body, prefer = 'return=representation') {
 async function listCustomers() {
   const customers = await readJson('customers?select=id,organization_id,display_name,status,version,created_at,updated_at&order=updated_at.desc&limit=100');
   const organizations = await readJson('organizations?select=id,display_name,legal_name,status,created_at,updated_at&order=updated_at.desc&limit=100');
-  return { customers, organizations };
+  // The directory needs only operational location context. Street addresses,
+  // contact details, and other unnecessary customer data stay off this view.
+  const locations = await readJson('service_locations?select=id,customer_id,organization_id,label,city,region,timezone,updated_at&order=updated_at.desc&limit=200');
+  return { customers, organizations, locations };
 }
 
 async function listJobs() {
   const jobs = await readJson('jobs?select=id,kind,status,customer_id,organization_id,service_location_id,title,scheduled_start_at,scheduled_end_at,scheduled_timezone,source_system,completed_at,cancelled_at,version,created_at,updated_at&order=scheduled_start_at.asc.nullslast,updated_at.desc&limit=100');
   const assignments = await readJson('job_assignments?select=id,job_id,actor_id,assignment_role,assigned_at,unassigned_at&unassigned_at=is.null&order=assigned_at.desc&limit=200');
-  return { jobs, assignments };
+  const locations = await readJson('service_locations?select=id,label,city,region,timezone&limit=200');
+  return { jobs, assignments, locations };
 }
 
 function validateJobPatch(input) {
