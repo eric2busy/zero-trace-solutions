@@ -93,7 +93,10 @@ async function listCustomers() {
 
 async function listJobs() {
   const jobs = await readJson('jobs?select=id,kind,status,customer_id,organization_id,service_location_id,title,scheduled_start_at,scheduled_end_at,scheduled_timezone,source_system,completed_at,cancelled_at,version,created_at,updated_at&order=scheduled_start_at.asc.nullslast,updated_at.desc&limit=100');
-  const assignments = await readJson('job_assignments?select=id,job_id,actor_id,assignment_role,assigned_at,unassigned_at&unassigned_at=is.null&order=assigned_at.desc&limit=200');
+  // Assignment display is intentionally limited to the active planning role
+  // and existing actor display name. Do not expose actor IDs, contact details,
+  // permissions, or historical assignments to the Command browser.
+  const assignments = await readJson('job_assignments?select=job_id,assignment_role,assigned_at,actors!job_assignments_actor_id_fkey(display_name)&unassigned_at=is.null&order=assigned_at.desc&limit=200');
   const locations = await readJson('service_locations?select=id,label,city,region,timezone&limit=200');
   return { jobs, assignments, locations };
 }

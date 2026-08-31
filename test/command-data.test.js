@@ -116,6 +116,10 @@ test('jobs read contract exposes schedule, active assignments, and minimal locat
   assert.deepEqual(result, { jobs: [], assignments: [], locations: [] });
   assert.equal(urls.some(url => url.includes('/jobs?')), true);
   assert.equal(urls.some(url => url.includes('/job_assignments?')), true);
+  const assignmentRead = urls.find(url => url.includes('/job_assignments?'));
+  assert.ok(assignmentRead);
+  assert.match(assignmentRead, /select=job_id,assignment_role,assigned_at,actors!job_assignments_actor_id_fkey\(display_name\)/);
+  assert.doesNotMatch(assignmentRead, /,actor_id(?:,|&)|auth_user_id|email|phone/);
   const locationRead = urls.find(url => url.includes('/service_locations?'));
   assert.ok(locationRead);
   assert.match(locationRead, /select=id,label,city,region,timezone/);
