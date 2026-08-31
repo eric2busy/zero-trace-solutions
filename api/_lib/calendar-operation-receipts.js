@@ -31,10 +31,17 @@ function markOperationSucceeded({ receiptId, actorId }) {
   });
 }
 
+function completeOperation({ receiptId, actorId, scheduledStartAt = null, scheduledEndAt = null, scheduledTimezone = null }) {
+  return rpc('command_complete_job_calendar_operation', {
+    p_receipt_id: receiptId, p_actor_id: actorId,
+    p_scheduled_start_at: scheduledStartAt, p_scheduled_end_at: scheduledEndAt, p_scheduled_timezone: scheduledTimezone,
+  });
+}
+
 function markOperationForReconciliation({ receiptId, actorId, errorCode }) {
   return rpc('command_set_job_operation_state', {
     p_receipt_id: receiptId, p_actor_id: actorId, p_state: 'reconciliation_needed', p_error_code: errorCode,
   });
 }
 
-module.exports = { reserveOperation, markOperationSucceeded, markOperationForReconciliation };
+module.exports = { reserveOperation, completeOperation, markOperationSucceeded, markOperationForReconciliation };
