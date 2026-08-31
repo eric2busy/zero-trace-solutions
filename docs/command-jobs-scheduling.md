@@ -28,6 +28,10 @@ The first live Command write slice is deliberately narrower than the schema. Aut
 
 Calendar-backed scheduling fields (`scheduled_start_at`, `scheduled_end_at`, `scheduled_timezone`, `calendar_event_id`), source/reconciliation fields, assignments, notes, and cancellation are not editable in this slice. Rescheduling or cancelling a Calendar-backed booking requires a separately approved synchronization and rollback design.
 
+## Read-only assignment visibility (Issue #26 continuation)
+
+The authenticated Command job and schedule views may show each job's active assignment role and the existing actor display name for operational coordination. The server-only read returns neither actor identifiers, contact details, permissions, historical assignments, nor note bodies. Assignments remain planning/attribution context only: this visibility does not grant technician access, change Command roles, or introduce assignment writes. When an assignment lacks a display name, Command shows only its role as assigned.
+
 ## Validation
 
 Run `npm test`, `npm run check`, and `git diff --check`. With an owner-approved clean local database only, apply migrations in timestamp order and run `supabase test db --file supabase/tests/jobs_scheduling_command.sql`. Do not use a connected Supabase project for this feature.

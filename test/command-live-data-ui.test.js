@@ -31,6 +31,14 @@ test('live UI renders service-location context without street-address fields or 
   assert.doesNotMatch(ui, /address_line_1|postal_code/);
 });
 
+test('live UI renders only active assignment role and display name without actor identifiers or writable controls', () => {
+  assert.match(ui, /function assignmentLabel/);
+  assert.match(ui, /No active assignment/);
+  assert.match(ui, /assignment\.actors\?\.display_name/);
+  assert.doesNotMatch(ui, /assignment\.actor_id/);
+  assert.doesNotMatch(ui, /method:\s*['\"](?:POST|PATCH|PUT|DELETE)/);
+});
+
 test('Home dashboard derives its live summary from the existing authenticated resources', () => {
   assert.match(ui, /function renderDashboard/);
   for (const resource of ['customers', 'jobs', 'approvals', 'activity']) {
