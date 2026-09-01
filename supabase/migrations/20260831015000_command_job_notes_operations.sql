@@ -15,6 +15,7 @@ create function public.command_create_job_note(
 returns table (id uuid, job_id uuid, kind public.command_job_note_kind, body text,
   created_at timestamptz, replayed boolean)
 language plpgsql security invoker set search_path = '' as $$
+#variable_conflict use_column
 declare
   v_note public.job_notes;
   v_body text;
@@ -29,20 +30,20 @@ begin
   if p_idempotency_key is null or char_length(p_idempotency_key) not between 16 and 200 then
     raise exception using errcode = '22023', message = 'invalid note idempotency key';
   end if;
-  if not exists (select 1 from public.actors where id = p_author_actor_id and kind = 'human' and status = 'active') then
+  if not exists (select 1 from public.actors where public.actors.id = p_author_actor_id and public.actors.kind = 'human' and public.actors.status = 'active') then
     raise exception using errcode = '42501', message = 'active human actor required';
   end if;
-  if not exists (select 1 from public.jobs where id = p_job_id) then
+  if not exists (select 1 from public.jobs where public.jobs.id = p_job_id) then
     raise exception using errcode = 'P0002', message = 'job not found';
   end if;
   insert into public.job_notes (job_id, author_actor_id, kind, body, correlation_id, idempotency_key)
   values (p_job_id, p_author_actor_id, 'internal', v_body, p_correlation_id, p_idempotency_key)
-  on conflict (job_id, idempotency_key) do nothing
+  on conflict (job_id, idempotency_key) where idempotency_key is not null do nothing
   returning * into v_note;
 
   if not found then
     select * into v_note from public.job_notes
-    where job_id = p_job_id and idempotency_key = p_idempotency_key;
+    where public.job_notes.job_id = p_job_id and public.job_notes.idempotency_key = p_idempotency_key;
     v_replayed := true;
     if v_note.author_actor_id is distinct from p_author_actor_id
       or v_note.kind <> 'internal' or v_note.body <> v_body then
@@ -65,6 +66,8 @@ $$;
 
 revoke all on function public.command_create_job_note(uuid, uuid, text, text, uuid) from public, anon, authenticated;
 grant execute on function public.command_create_job_note(uuid, uuid, text, text, uuid) to service_role;
+grant select on public.actors, public.jobs, public.job_notes to service_role;
+grant insert on public.job_notes, public.activity_events to service_role;
 
 comment on function public.command_create_job_note(uuid, uuid, text, text, uuid) is
   'Server-only atomic Command note writer. Inserts an immutable internal note and activity event together; an identical idempotent retry returns the original note without a second activity event.';

@@ -17,10 +17,14 @@ test('prepared note operation is append-only, server-only, atomic, and replay-sa
   assert.match(migration, /create function public\.command_create_job_note/);
   assert.match(migration, /insert into public\.job_notes/);
   assert.match(migration, /insert into public\.activity_events/);
-  assert.match(migration, /on conflict \(job_id, idempotency_key\) do nothing/);
+  assert.match(migration, /on conflict \(job_id, idempotency_key\) where idempotency_key is not null do nothing/);
   assert.match(migration, /revoke all on function public\.command_create_job_note[\s\S]*from public, anon, authenticated/);
   assert.match(migration, /grant execute on function public\.command_create_job_note[\s\S]*to service_role/);
+  assert.match(migration, /grant select on public\.actors, public\.jobs, public\.job_notes to service_role/);
+  assert.match(migration, /grant insert on public\.job_notes, public\.activity_events to service_role/);
+  assert.doesNotMatch(migration, /security definer/);
   assert.match(migration, /security invoker set search_path = ''/);
+  assert.match(migration, /#variable_conflict use_column/);
   assert.match(migration, /regexp_replace/);
   assert.doesNotMatch(migration, /p_require_active_assignment|active assignment required/);
 });
