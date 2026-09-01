@@ -42,9 +42,8 @@ module.exports = async function commandDataHandler(req, res) {
     if (resource === 'notes') {
       if (!NOTE_ROLES.has(identity.role)) return sendJson(res, 403, { error: 'insufficient_role' });
       try {
-        const result = await commandData.listJobNotes({ authUserId: identity.user.id, role: identity.role, jobId: req.query?.jobId });
+        const result = await commandData.listJobNotes({ authUserId: identity.user.id, jobId: req.query?.jobId });
         if (result.state === 'invalid') return sendJson(res, 400, { error: 'invalid_job_id' });
-        if (result.state === 'forbidden') return sendJson(res, 403, { error: 'job_not_assigned' });
         return sendJson(res, 200, { resource, data: { notes: result.notes }, meta: { source: 'supabase', mode: 'read_only' } });
       } catch (error) {
         console.error('command_notes_read_failed', { code: error?.code || 'unknown', status: error?.status || null });
@@ -80,9 +79,8 @@ module.exports = async function commandDataHandler(req, res) {
     const body = await parseBody(req);
     if (!body) return sendJson(res, 400, { error: 'invalid_json' });
     try {
-      const result = await commandData.createJobNote({ authUserId: identity.user.id, role: identity.role, input: body });
+      const result = await commandData.createJobNote({ authUserId: identity.user.id, input: body });
       if (result.state === 'invalid') return sendJson(res, 400, { error: result.error });
-      if (result.state === 'forbidden') return sendJson(res, 403, { error: 'job_not_assigned' });
       return sendJson(res, 201, { ok: true, state: result.state, note: result.note });
     } catch (error) {
       console.error('command_note_create_failed', { code: error?.code || 'unknown', status: error?.status || null });

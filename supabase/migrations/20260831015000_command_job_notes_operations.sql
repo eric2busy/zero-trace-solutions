@@ -10,17 +10,20 @@ create function public.command_create_job_note(
   p_author_actor_id uuid,
   p_body text,
   p_idempotency_key text,
-  p_correlation_id uuid,
-  p_require_active_assignment boolean default false
+  p_correlation_id uuid
 )
 returns table (id uuid, job_id uuid, kind public.command_job_note_kind, body text,
   created_at timestamptz, replayed boolean)
 language plpgsql security invoker set search_path = '' as $$
 declare
   v_note public.job_notes;
+  v_body text;
   v_replayed boolean := false;
 begin
-  if p_body is null or char_length(btrim(p_body)) not between 1 and 2000 then
+  -- Match the Command API's canonical form even if a trusted server caller
+  -- reaches this narrow RPC directly.
+  v_body := btrim(regexp_replace(regexp_replace(coalesce(p_body, ''), '[[:cntrl:]]', ' ', 'g'), '[[:space:]]+', ' ', 'g'));
+  if char_length(v_body) not between 1 and 2000 then
     raise exception using errcode = '22023', message = 'note body must be between 1 and 2000 characters';
   end if;
   if p_idempotency_key is null or char_length(p_idempotency_key) not between 16 and 200 then
@@ -32,15 +35,8 @@ begin
   if not exists (select 1 from public.jobs where id = p_job_id) then
     raise exception using errcode = 'P0002', message = 'job not found';
   end if;
-  if p_require_active_assignment and not exists (
-    select 1 from public.job_assignments
-    where job_id = p_job_id and actor_id = p_author_actor_id and unassigned_at is null
-  ) then
-    raise exception using errcode = '42501', message = 'active assignment required';
-  end if;
-
   insert into public.job_notes (job_id, author_actor_id, kind, body, correlation_id, idempotency_key)
-  values (p_job_id, p_author_actor_id, 'internal', btrim(p_body), p_correlation_id, p_idempotency_key)
+  values (p_job_id, p_author_actor_id, 'internal', v_body, p_correlation_id, p_idempotency_key)
   on conflict (job_id, idempotency_key) do nothing
   returning * into v_note;
 
@@ -49,7 +45,7 @@ begin
     where job_id = p_job_id and idempotency_key = p_idempotency_key;
     v_replayed := true;
     if v_note.author_actor_id is distinct from p_author_actor_id
-      or v_note.kind <> 'internal' or v_note.body <> btrim(p_body) then
+      or v_note.kind <> 'internal' or v_note.body <> v_body then
       raise exception using errcode = '23505', message = 'idempotency key conflicts with existing note';
     end if;
   else
@@ -67,8 +63,8 @@ begin
 end;
 $$;
 
-revoke all on function public.command_create_job_note(uuid, uuid, text, text, uuid, boolean) from public, anon, authenticated;
-grant execute on function public.command_create_job_note(uuid, uuid, text, text, uuid, boolean) to service_role;
+revoke all on function public.command_create_job_note(uuid, uuid, text, text, uuid) from public, anon, authenticated;
+grant execute on function public.command_create_job_note(uuid, uuid, text, text, uuid) to service_role;
 
-comment on function public.command_create_job_note(uuid, uuid, text, text, uuid, boolean) is
+comment on function public.command_create_job_note(uuid, uuid, text, text, uuid) is
   'Server-only atomic Command note writer. Inserts an immutable internal note and activity event together; an identical idempotent retry returns the original note without a second activity event.';

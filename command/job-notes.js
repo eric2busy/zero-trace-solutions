@@ -3,7 +3,7 @@
   if (!['owner', 'admin', 'operator'].includes(role)) return;
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const toast = message => typeof window.showToast === 'function' ? window.showToast(message) : console.info(message);
-  let key = null;
+  const retryKeys = new WeakMap();
 
   function installStyle() {
     const style = document.createElement('style');
@@ -32,13 +32,14 @@
     } catch { panel.innerHTML = '<div class="row-sub">Notes are unavailable. Nothing was changed.</div>'; }
   }
   async function save(event, panel, jobId) {
-    event.preventDefault(); const textarea = panel.querySelector('textarea'); const button = panel.querySelector('button'); const body = textarea.value.trim();
-    if (!body) return toast('A note cannot be empty.'); if (!key) key = crypto.randomUUID(); button.disabled = true;
+    event.preventDefault(); const form = event.currentTarget; const textarea = panel.querySelector('textarea'); const button = panel.querySelector('button'); const body = textarea.value.trim();
+    if (!body) return toast('A note cannot be empty.');
+    const retry = retryKeys.get(form); const key = retry?.body === body ? retry.key : crypto.randomUUID(); button.disabled = true;
     try {
       const response = await fetch('/api/command-data?resource=note', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ jobId, body, idempotencyKey: key }) });
       const payload = await response.json().catch(() => null); if (!response.ok) throw new Error(payload?.error || 'note_create_failed');
-      key = null; textarea.value = ''; const notes = await load(jobId); panel.querySelector('.job-notes-list').innerHTML = notesHtml(notes); toast(payload.state === 'replayed' ? 'Existing note restored.' : 'Operational note added.');
-    } catch { toast('Could not add note. It was not treated as saved.'); } finally { button.disabled = false; }
+      retryKeys.delete(form); textarea.value = ''; const notes = await load(jobId); panel.querySelector('.job-notes-list').innerHTML = notesHtml(notes); toast(payload.state === 'replayed' ? 'Existing note restored.' : 'Operational note added.');
+    } catch { retryKeys.set(form, { body, key }); toast('Could not add note. It was not treated as saved.'); } finally { button.disabled = false; }
   }
   document.addEventListener('click', event => { const button = event.target.closest('[data-job-notes]'); if (!button) return; const row = button.closest('[data-job-id]'); if (row) open(row, row.dataset.jobId); });
   window.addEventListener('DOMContentLoaded', installStyle, { once: true });

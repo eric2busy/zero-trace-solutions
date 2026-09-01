@@ -110,12 +110,7 @@ async function actorForAuthUser(authUserId) {
   return rows?.[0]?.id || null;
 }
 
-async function assertTechnicianAssignment(jobId, actorId) {
-  const rows = await readJson(`job_assignments?select=id&job_id=eq.${encodeURIComponent(jobId)}&actor_id=eq.${encodeURIComponent(actorId)}&unassigned_at=is.null&limit=1`);
-  return Boolean(rows?.[0]?.id);
-}
-
-async function listJobNotes({ authUserId, role, jobId }) {
+async function listJobNotes({ authUserId, jobId }) {
   if (!validUuid(jobId)) return { state: 'invalid' };
   const actorId = await actorForAuthUser(authUserId);
   if (!actorId) {
@@ -123,7 +118,6 @@ async function listJobNotes({ authUserId, role, jobId }) {
     error.code = 'COMMAND_ACTOR_NOT_PROVISIONED';
     throw error;
   }
-  if (role === 'technician' && !await assertTechnicianAssignment(jobId, actorId)) return { state: 'forbidden' };
   const notes = await readJson(`job_notes?select=id,job_id,kind,body,created_at,actors!job_notes_author_actor_id_fkey(display_name)&job_id=eq.${encodeURIComponent(jobId)}&order=created_at.desc&limit=100`);
   return { state: 'ok', notes };
 }
@@ -141,7 +135,7 @@ function validateJobNote(input) {
   return { ok: true, value: { jobId, body, idempotencyKey } };
 }
 
-async function createJobNote({ authUserId, role, input }) {
+async function createJobNote({ authUserId, input }) {
   const validated = validateJobNote(input);
   if (!validated.ok) return { state: 'invalid', error: validated.error };
   const actorId = await actorForAuthUser(authUserId);
@@ -151,14 +145,12 @@ async function createJobNote({ authUserId, role, input }) {
     throw error;
   }
   const { jobId, body, idempotencyKey } = validated.value;
-  if (role === 'technician' && !await assertTechnicianAssignment(jobId, actorId)) return { state: 'forbidden' };
   const response = await writeJson('rpc/command_create_job_note', 'POST', {
     p_job_id: jobId,
     p_author_actor_id: actorId,
     p_body: body,
     p_idempotency_key: idempotencyKey,
     p_correlation_id: randomUUID(),
-    p_require_active_assignment: role === 'technician',
   });
   const note = response?.[0];
   if (!note) {
@@ -350,7 +342,6 @@ module.exports = {
   updateCustomer,
   updateJob,
   actorForAuthUser,
-  assertTechnicianAssignment,
   createJobNote,
   listJobNotes,
   validUuid,
