@@ -39,6 +39,19 @@ test('live UI renders only active assignment role and display name without actor
   assert.doesNotMatch(ui, /method:\s*['\"](?:POST|PATCH|PUT|DELETE)/);
 });
 
+test('schedule uses a read-only day/week presentation with loading, empty, and failed-closed states', () => {
+  const scheduleHelper = fs.readFileSync(path.join(root, 'command', 'schedule-view.js'), 'utf8');
+  assert.match(ui, /function renderScheduleLoading/);
+  assert.match(ui, /function renderScheduleError/);
+  assert.match(ui, /data-schedule-mode="day"/);
+  assert.match(ui, /data-schedule-mode="week"/);
+  assert.match(ui, /No scheduled visits/);
+  assert.match(ui, /Live schedule unavailable/);
+  assert.match(ui, /no Calendar changes/);
+  assert.match(scheduleHelper, /groupScheduledJobs/);
+  assert.doesNotMatch(scheduleHelper, /fetch\(|calendar\.events|address_line_1|postal_code/);
+});
+
 test('Home dashboard derives its live summary from the existing authenticated resources', () => {
   assert.match(ui, /function renderDashboard/);
   for (const resource of ['customers', 'jobs', 'approvals', 'activity']) {

@@ -92,3 +92,14 @@ test('Command route redirects an unauthenticated request before returning Comman
   assert.equal(res.headers.Location, '/command/login/');
   assert.equal(res.body, undefined);
 });
+
+test('authenticated Command route loads the read-only schedule helper before live data', async () => {
+  setTestEnv();
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({ ok: true, json: async () => ({ app_metadata: { command_role: 'operator' }, email: 'operator@example.test' }) });
+  const res = response();
+  await command({ method: 'GET', headers: { cookie: '__Host-zt-command-access=access' } }, res);
+  global.fetch = originalFetch;
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.body.indexOf('/command/schedule-view.js') < res.body.indexOf('/command/live-data.js'));
+});
