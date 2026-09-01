@@ -101,6 +101,74 @@ async function listJobs() {
   return { jobs, assignments, locations };
 }
 
+function validUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+}
+
+async function actorForAuthUser(authUserId) {
+  const rows = await readJson(`actors?select=id&auth_user_id=eq.${encodeURIComponent(authUserId)}&kind=eq.human&status=eq.active&limit=1`);
+  return rows?.[0]?.id || null;
+}
+
+async function assertTechnicianAssignment(jobId, actorId) {
+  const rows = await readJson(`job_assignments?select=id&job_id=eq.${encodeURIComponent(jobId)}&actor_id=eq.${encodeURIComponent(actorId)}&unassigned_at=is.null&limit=1`);
+  return Boolean(rows?.[0]?.id);
+}
+
+async function listJobNotes({ authUserId, role, jobId }) {
+  if (!validUuid(jobId)) return { state: 'invalid' };
+  const actorId = await actorForAuthUser(authUserId);
+  if (!actorId) {
+    const error = new Error('Command actor is not provisioned.');
+    error.code = 'COMMAND_ACTOR_NOT_PROVISIONED';
+    throw error;
+  }
+  if (role === 'technician' && !await assertTechnicianAssignment(jobId, actorId)) return { state: 'forbidden' };
+  const notes = await readJson(`job_notes?select=id,job_id,kind,body,created_at,actors!job_notes_author_actor_id_fkey(display_name)&job_id=eq.${encodeURIComponent(jobId)}&order=created_at.desc&limit=100`);
+  return { state: 'ok', notes };
+}
+
+function validateJobNote(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'invalid_payload' };
+  const allowed = new Set(['jobId', 'body', 'idempotencyKey']);
+  if (Object.keys(input).some(key => !allowed.has(key))) return { ok: false, error: 'unsupported_field' };
+  const jobId = String(input.jobId || '').trim();
+  const body = String(input.body || '').trim().replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ');
+  const idempotencyKey = String(input.idempotencyKey || '').trim();
+  if (!validUuid(jobId)) return { ok: false, error: 'invalid_job_id' };
+  if (body.length < 1 || body.length > 2000) return { ok: false, error: 'invalid_note_body' };
+  if (!validUuid(idempotencyKey)) return { ok: false, error: 'invalid_idempotency_key' };
+  return { ok: true, value: { jobId, body, idempotencyKey } };
+}
+
+async function createJobNote({ authUserId, role, input }) {
+  const validated = validateJobNote(input);
+  if (!validated.ok) return { state: 'invalid', error: validated.error };
+  const actorId = await actorForAuthUser(authUserId);
+  if (!actorId) {
+    const error = new Error('Command actor is not provisioned.');
+    error.code = 'COMMAND_ACTOR_NOT_PROVISIONED';
+    throw error;
+  }
+  const { jobId, body, idempotencyKey } = validated.value;
+  if (role === 'technician' && !await assertTechnicianAssignment(jobId, actorId)) return { state: 'forbidden' };
+  const response = await writeJson('rpc/command_create_job_note', 'POST', {
+    p_job_id: jobId,
+    p_author_actor_id: actorId,
+    p_body: body,
+    p_idempotency_key: idempotencyKey,
+    p_correlation_id: randomUUID(),
+    p_require_active_assignment: role === 'technician',
+  });
+  const note = response?.[0];
+  if (!note) {
+    const error = new Error('Command note operation returned no receipt.');
+    error.code = 'COMMAND_NOTE_MISSING_RECEIPT';
+    throw error;
+  }
+  return { state: note.replayed ? 'replayed' : 'created', note };
+}
+
 function validateJobPatch(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'invalid_payload' };
   const allowed = new Set(['id', 'title', 'status', 'version']);
@@ -145,11 +213,6 @@ function validateCustomerPatch(input) {
   if (!Number.isInteger(version) || version < 1) return { ok: false, error: 'invalid_version' };
 
   return { ok: true, value: { id, displayName, status, version } };
-}
-
-async function actorForAuthUser(authUserId) {
-  const rows = await readJson(`actors?select=id&auth_user_id=eq.${encodeURIComponent(authUserId)}&kind=eq.human&status=eq.active&limit=1`);
-  return rows?.[0]?.id || null;
 }
 
 async function updateCustomer({ authUserId, input }) {
@@ -287,6 +350,11 @@ module.exports = {
   updateCustomer,
   updateJob,
   actorForAuthUser,
+  assertTechnicianAssignment,
+  createJobNote,
+  listJobNotes,
+  validUuid,
+  validateJobNote,
   validateCustomerPatch,
   validateJobPatch,
   writeJson,
