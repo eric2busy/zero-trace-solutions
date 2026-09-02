@@ -68,10 +68,11 @@ test('jobs and scheduling migration is private, auditable, and calendar-fixture-
   assert.doesNotMatch(jobsMigration, /scheduled_at/);
 });
 
-test('fixture job rows support keyboard activation without adding a data path', () => {
+test('mobile refresh keeps job/schedule navigation as local UI without adding a data path', () => {
   const commandHtml = fs.readFileSync(path.join(root, 'command/index.html'), 'utf8');
   const commandScript = commandHtml.slice(commandHtml.lastIndexOf('<script>'));
-  assert.match(commandHtml, /data-job-detail="northlake"/);
-  assert.match(commandHtml, /event\.key==='Enter'\|\|event\.key===' '/);
+  assert.match(commandHtml, /data-jobs-tab="work"/);
+  assert.match(commandHtml, /data-jobs-tab="schedule"/);
+  assert.match(commandHtml, /function showJobsView/);
   assert.doesNotMatch(commandScript, /fetch\(/i);
 });
