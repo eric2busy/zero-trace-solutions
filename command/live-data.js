@@ -73,6 +73,50 @@
     return `<div class="list-row"><div class="row-icon">${String(index + 1).padStart(2, '0')}</div><div><div class="row-name">${escapeHtml(job.title)}</div><div class="row-sub">${escapeHtml(formatDate(job.scheduled_start_at))} · ${escapeHtml(titleCase(job.kind))} · ${escapeHtml(titleCase(job.source_system))}</div><div class="row-sub">${escapeHtml(locationLabel(job, locationsById))}</div><div class="row-sub">${escapeHtml(assignmentLabels(job, assignmentsByJobId))}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div>`;
   }
 
+  function scheduleTime(job, timeZone) {
+    return new Intl.DateTimeFormat(undefined, { timeZone, hour: 'numeric', minute: '2-digit' }).format(new Date(job.scheduled_start_at));
+  }
+
+  function scheduleEvent(job, timeZone, locationsById, assignmentsByJobId) {
+    return `<article class="schedule-event"><div class="schedule-event-time">${escapeHtml(scheduleTime(job, timeZone))}</div><div><div class="schedule-event-title">${escapeHtml(job.title)}</div><div class="schedule-event-meta">${escapeHtml(locationLabel(job, locationsById))} · ${escapeHtml(titleCase(job.kind))}</div><div class="schedule-event-meta">${escapeHtml(assignmentLabels(job, assignmentsByJobId))}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></article>`;
+  }
+
+  function scheduleDay(group, locationsById, assignmentsByJobId) {
+    const count = `${group.jobs.length} ${group.jobs.length === 1 ? 'visit' : 'visits'}`;
+    return `<section class="card panel schedule-day"><div class="schedule-day-head"><strong>${escapeHtml(group.label)}</strong><span>${escapeHtml(group.timeZone)} · ${escapeHtml(count)}</span></div>${group.jobs.map(job => scheduleEvent(job, group.timeZone, locationsById, assignmentsByJobId)).join('')}</section>`;
+  }
+
+  function renderScheduleLoading() {
+    const schedule = document.querySelector('[data-section="schedule"]');
+    if (!schedule) return;
+    schedule.innerHTML = '<div class="section-header"><div class="eyebrow">Operations · Live read-only</div><h2>Schedule</h2><p>Day and week views from the current Command schedule. Google Calendar remains the scheduling authority.</p></div><div class="card panel"><div class="empty"><strong>Loading schedule</strong><span>Retrieving the live read-only schedule.</span></div></div>';
+  }
+
+  function renderScheduleError() {
+    const schedule = document.querySelector('[data-section="schedule"]');
+    if (!schedule) return;
+    schedule.innerHTML = '<div class="section-header"><div class="eyebrow">Operations · Live read-only</div><h2>Schedule</h2><p>Day and week views from the current Command schedule. Google Calendar remains the scheduling authority.</p></div><div class="card panel"><div class="empty"><strong>Live schedule unavailable</strong><span>Command failed closed. No fixture data was substituted.</span></div></div>';
+  }
+
+  function renderSchedule(groups, locationsById, assignmentsByJobId) {
+    const schedule = document.querySelector('[data-section="schedule"]');
+    if (!schedule) return;
+    if (!groups.length) {
+      schedule.innerHTML = '<div class="section-header"><div class="eyebrow">Operations · Live read-only</div><h2>Schedule</h2><p>Day and week views from the current Command schedule. Google Calendar remains the scheduling authority.</p></div><div class="card panel"><div class="empty"><strong>No scheduled visits</strong><span>There are no dated active jobs to show.</span></div></div><div class="prototype-note">Read-only schedule projection · no Calendar changes</div>';
+      return;
+    }
+    let mode = 'day';
+    let selectedKey = groups[0].key;
+    const paint = () => {
+      const selected = groups.find(group => group.key === selectedKey) || groups[0];
+      const days = mode === 'week' ? groups : [selected];
+      schedule.innerHTML = `<div class="section-header"><div class="eyebrow">Operations · Live read-only</div><h2>Schedule</h2><p>Grouped in each job’s local timezone. Google Calendar remains the scheduling authority.</p></div><div class="schedule-controls"><div class="schedule-tabs" aria-label="Schedule view"><button type="button" class="schedule-tab ${mode === 'day' ? 'active' : ''}" data-schedule-mode="day" aria-pressed="${mode === 'day'}">Day</button><button type="button" class="schedule-tab ${mode === 'week' ? 'active' : ''}" data-schedule-mode="week" aria-pressed="${mode === 'week'}">Week</button></div><span class="badge blue">Read-only</span></div><div class="schedule-date-rail" aria-label="Scheduled dates">${groups.map(group => `<button type="button" class="schedule-date ${group.key === selectedKey ? 'active' : ''}" data-schedule-date="${escapeHtml(group.key)}" aria-pressed="${group.key === selectedKey}">${escapeHtml(group.shortLabel)}<span>${group.jobs.length}</span></button>`).join('')}</div><div data-schedule-results>${days.map(group => scheduleDay(group, locationsById, assignmentsByJobId)).join('')}</div><div class="prototype-note">Read-only schedule projection · no Calendar changes</div>`;
+      schedule.querySelectorAll('[data-schedule-mode]').forEach(button => button.addEventListener('click', () => { mode = button.dataset.scheduleMode; paint(); }));
+      schedule.querySelectorAll('[data-schedule-date]').forEach(button => button.addEventListener('click', () => { selectedKey = button.dataset.scheduleDate; mode = 'day'; paint(); }));
+    };
+    paint();
+  }
+
   function renderJobs(data) {
     const jobs = data.jobs || [];
     const locationsById = new Map((data.locations || []).map(location => [location.id, location]));
@@ -93,14 +137,8 @@
       const note = section.querySelector('.prototype-note'); if (note) note.textContent = 'Live Supabase job records · operational writes remain disabled';
     }
 
-    const schedule = document.querySelector('[data-section="schedule"]');
-    if (schedule) {
-      const timeline = schedule.querySelector('.timeline');
-      const scheduled = active.filter(job => job.scheduled_start_at).sort((a, b) => new Date(a.scheduled_start_at) - new Date(b.scheduled_start_at));
-      if (timeline) timeline.innerHTML = scheduled.map(job => `<div class="event"><div class="event-time">${escapeHtml(new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(job.scheduled_start_at)))}</div><div><div class="event-name">${escapeHtml(job.title)}</div><div class="event-meta">${escapeHtml(locationLabel(job, locationsById))} · ${escapeHtml(titleCase(job.kind))} · ${escapeHtml(job.scheduled_timezone || 'Timezone pending')}</div><div class="event-meta">${escapeHtml(assignmentLabels(job, assignmentsByJobId))}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div>`).join('') || '<div class="empty"><strong>No scheduled visits</strong><span>Live jobs exist independently from Google Calendar until that integration is approved.</span></div>';
-      schedule.querySelector('.section-header .eyebrow').textContent = 'Operations · Live read-only';
-      const note = schedule.querySelector('.prototype-note'); if (note) note.textContent = 'Live Supabase schedule projection · Google Calendar remains disconnected';
-    }
+    const scheduleJobs = active.filter(job => job.scheduled_start_at);
+    renderSchedule(window.CommandScheduleView.groupScheduledJobs(scheduleJobs), locationsById, assignmentsByJobId);
   }
 
   function renderApprovals(data) {
@@ -192,6 +230,7 @@
   }
 
   async function boot() {
+    renderScheduleLoading();
     const resources = [
       ['customers', renderCustomers],
       ['jobs', renderJobs],
@@ -205,6 +244,7 @@
         return [resource, data];
       } catch (error) {
         console.warn('command_live_data_load_failed', resource);
+        if (resource === 'jobs') renderScheduleError();
         showLoadError(resource);
         return null;
       }
