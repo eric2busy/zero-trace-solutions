@@ -73,16 +73,16 @@ test('Home template contains live placeholders instead of dashboard fixture valu
   assert.doesNotMatch(dashboard, /Static prototype · no real customer data/);
 });
 
-test('mobile shell has the requested destinations, a bounded Messages history, and a More-sheet sign out', () => {
+test('mobile shell preserves the requested navigation, an honest future Messages inbox, and a More-sheet sign out', () => {
   const home = fs.readFileSync(path.join(root, 'command', 'index.html'), 'utf8');
   const ui = fs.readFileSync(path.join(root, 'command', 'live-data.js'), 'utf8');
-  const history = fs.readFileSync(path.join(root, 'command', 'communication-history.js'), 'utf8');
+  const health = fs.readFileSync(path.join(root, 'command', 'health-live.js'), 'utf8');
   for (const label of ['Today', 'Jobs', 'Clients', 'Messages', 'More']) assert.match(home, new RegExp(label));
-  assert.match(home, /Loading recorded history/);
-  assert.match(history, /not_yet_instrumented/);
-  assert.match(history, /recipient details withheld/);
-  assert.match(history, /No fixture communications or assumed integration state was substituted/);
-  assert.doesNotMatch(history, /method:\s*['\"](?:POST|PUT|PATCH|DELETE)/i);
+  assert.match(home, /Customer messaging is coming to Command/);
+  assert.match(home, /Website chat and customer conversation workflows are not connected yet/);
+  assert.match(health, /Integration evidence/);
+  assert.match(health, /Recent recorded activity/);
+  assert.doesNotMatch(health, /method:\s*['\"](POST|PUT|PATCH|DELETE)['\"]/i);
   assert.match(home, /more-sheet/);
   assert.match(home, /Sign out/);
   assert.match(home, /prefers-reduced-motion/);
