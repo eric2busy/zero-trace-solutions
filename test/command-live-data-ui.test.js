@@ -104,6 +104,8 @@ test('Command uses the Schedule label, removes the duplicate header menu, and pe
   assert.match(home, /data-theme-status/);
   assert.match(home, /prefers-color-scheme/);
   assert.match(home, /#0083F5/);
+  assert.match(home, /html\[data-theme="light"\] \.brand-mark img\{filter:none\}/);
+  assert.match(home, /html\[data-theme="dark"\] \.brand-mark img\{filter:brightness\(0\) invert\(1\)\}/);
 });
 
 test('live UI fails closed rather than substituting fixture data after a data error', () => {
