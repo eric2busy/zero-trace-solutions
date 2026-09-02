@@ -84,14 +84,36 @@ function summarizeOutbox(rows = []) {
   };
 }
 
+function integrationState(rows = []) {
+  if (!rows.length) return 'not_yet_instrumented';
+  return rows.some(row => row.status === 'needs_attention' || row.state === 'reconciliation_needed') ? 'attention' : 'healthy';
+}
+
+function summarizeIntegrationHistory({ receipts = [], outbox = [] } = {}) {
+  const byDestination = destination => outbox.filter(row => row.destination === destination);
+  const calendarOutbox = byDestination('google_calendar');
+  const notion = byDestination('notion');
+  const email = byDestination('resend');
+  const timeline = [
+    ...receipts.map(row => ({ id: `calendar-receipt:${row.id}`, kind: 'calendar_operation', state: row.state, operation: row.operation, errorCode: row.error_code || null, occurredAt: row.reconciliation_needed_at || row.completed_at || row.created_at })),
+    ...outbox.map(row => ({ id: `integration-outbox:${row.id}`, kind: row.destination, state: row.status, eventType: row.event_type, errorCode: row.error_code || null, occurredAt: row.delivered_at || row.last_attempt_at || row.created_at })),
+  ].filter(row => row.occurredAt).sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt)).slice(0, 30);
+  return {
+    calendar: { state: integrationState([...receipts, ...calendarOutbox]), reconciliationNeeded: receipts.filter(row => row.state === 'reconciliation_needed').length, recordedOperations: receipts.length },
+    notion: { state: integrationState(notion), recordedEvents: notion.length },
+    email: { state: integrationState(email), recordedEvents: email.length },
+    timeline,
+  };
+}
+
 async function listHealth() {
   const results = await Promise.allSettled([
     commandData.readJson('customers?select=id,status&limit=1000'),
     commandData.readJson('jobs?select=id,title,status,scheduled_start_at,scheduled_end_at,scheduled_timezone&order=scheduled_start_at.asc.nullslast&limit=1000'),
     commandData.readJson('approvals?select=id,status,expires_at&order=requested_at.desc&limit=1000'),
     commandData.readJson('activity_events?select=id,action,target_type,authority_level,outcome,error_code,created_at&order=created_at.desc&limit=100'),
-    commandData.readJson('job_operation_receipts?select=id,state&limit=1000'),
-    commandData.readJson('integration_outbox?select=id,status,destination,available_at,last_attempt_at,error_code&limit=1000'),
+    commandData.readJson('job_operation_receipts?select=id,operation,state,error_code,reconciliation_needed_at,completed_at,created_at&order=created_at.desc&limit=100'),
+    commandData.readJson('integration_outbox?select=id,destination,event_type,status,last_attempt_at,delivered_at,error_code,created_at&order=created_at.desc&limit=100'),
   ]);
 
   const [customersResult, jobsResult, approvalsResult, activityResult, receiptsResult, outboxResult] = results;
@@ -119,6 +141,7 @@ async function listHealth() {
       integrationOutbox: outbox ? summarizeOutbox(outbox) : { state: 'unavailable', total: null, needsAttention: null, pending: null },
       providerTelemetry: 'not_yet_instrumented',
     },
+    integrationHistory: (receipts && outbox) ? summarizeIntegrationHistory({ receipts, outbox }) : null,
   };
 }
 
@@ -127,6 +150,7 @@ module.exports = {
   summarizeActivity,
   summarizeApprovals,
   summarizeJobs,
+  summarizeIntegrationHistory,
   summarizeOutbox,
   summarizeReceipts,
 };
