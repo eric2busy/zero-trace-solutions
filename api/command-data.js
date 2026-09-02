@@ -1,6 +1,7 @@
 const { authenticatedCommandUser } = require('./_lib/command-auth');
 const commandData = require('./_lib/command-data');
 const commandHealth = require('./_lib/command-health');
+const commandSearch = require('./_lib/command-search');
 
 const READ_ROLES = new Set(['owner', 'admin', 'operator']);
 const CUSTOMER_WRITE_ROLES = new Set(['owner', 'admin']);
@@ -39,6 +40,16 @@ module.exports = async function commandDataHandler(req, res) {
 
   if (req.method === 'GET') {
     const resource = String(req.query?.resource || 'customers');
+    if (resource === 'search') {
+      if (!READ_ROLES.has(identity.role)) return sendJson(res, 403, { error: 'insufficient_role' });
+      try {
+        const data = await commandSearch.searchCommand(req.query?.q, commandData);
+        return sendJson(res, 200, { resource, data, meta: { source: 'supabase', mode: 'read_only' } });
+      } catch (error) {
+        console.error('command_search_read_failed', { code: error?.code || 'unknown', status: error?.status || null });
+        return sendJson(res, 502, { error: 'command_search_read_failed' });
+      }
+    }
     if (resource === 'notes') {
       if (!NOTE_ROLES.has(identity.role)) return sendJson(res, 403, { error: 'insufficient_role' });
       try {
