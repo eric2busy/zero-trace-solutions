@@ -109,3 +109,21 @@ test('Command uses the Schedule label, removes the duplicate header menu, and pe
 test('live UI fails closed rather than substituting fixture data after a data error', () => {
   assert.match(ui, /Command failed closed\. No fixture data was substituted\./);
 });
+
+test('Command palette is an authenticated, read-only, keyboard-accessible search surface', () => {
+  const home = fs.readFileSync(path.join(root, 'command', 'index.html'), 'utf8');
+  const palette = fs.readFileSync(path.join(root, 'command', 'command-palette.js'), 'utf8');
+  assert.match(commandRoute, /command-palette\.js/);
+  assert.match(home, /data-command-trigger/);
+  assert.match(home, /id="commandPalette"/);
+  assert.match(home, /aria-modal="true"/);
+  assert.match(home, /command-palette-card/);
+  assert.match(palette, /event\.metaKey \|\| event\.ctrlKey/);
+  assert.match(palette, /resource=search/);
+  assert.match(palette, /AbortController/);
+  assert.match(palette, /CommandNavigation\?\.show/);
+  assert.doesNotMatch(palette, /SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|\/rest\/v1\//);
+  assert.doesNotMatch(palette, /method:\s*['"](?:POST|PATCH|PUT|DELETE)/);
+  assert.match(palette, /Search unavailable/);
+  assert.match(palette, /No matching Command records/);
+});
