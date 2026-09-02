@@ -53,6 +53,30 @@ test('reconciliation and outbox exceptions surface as attention', () => {
   ]), { total: 2, needsAttention: 1, pending: 1, state: 'attention' });
 });
 
+test('system-health integration evidence exposes only non-sensitive operational records and never invents email delivery', () => {
+  const history = commandHealth.summarizeIntegrationHistory({
+    receipts: [{ id: 'receipt-1', operation: 'reschedule', state: 'reconciliation_needed', error_code: 'calendar_rollback_failed', reconciliation_needed_at: '2026-09-02T08:00:00Z' }],
+    outbox: [
+      { id: 'outbox-1', destination: 'resend', event_type: 'booking_confirmation', status: 'delivered', delivered_at: '2026-09-02T09:00:00Z' },
+      { id: 'outbox-2', destination: 'notion', event_type: 'lead_mirrored', status: 'needs_attention', error_code: 'notion_rejected', last_attempt_at: '2026-09-02T10:00:00Z' },
+    ],
+  });
+
+  assert.equal(history.calendar.state, 'attention');
+  assert.equal(history.email.state, 'healthy');
+  assert.equal(history.notion.state, 'attention');
+  assert.equal(history.timeline[0].kind, 'notion');
+  assert.equal(JSON.stringify(history).includes('recipient'), false);
+  assert.equal(JSON.stringify(history).includes('payload'), false);
+});
+
+test('system-health integration evidence labels empty sources not yet instrumented', () => {
+  const history = commandHealth.summarizeIntegrationHistory();
+  assert.equal(history.email.state, 'not_yet_instrumented');
+  assert.equal(history.notion.state, 'not_yet_instrumented');
+  assert.equal(history.calendar.state, 'not_yet_instrumented');
+});
+
 test('activity summary returns only recent failed or blocked events and omits metadata', () => {
   const result = commandHealth.summarizeActivity([
     { id: '1', action: 'job.sync', target_type: 'job', authority_level: 'green', outcome: 'succeeded', error_code: null, created_at: '2026-08-31T08:00:00Z', metadata: { secret: 'nope' } },
