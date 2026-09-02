@@ -93,7 +93,8 @@ test('Command uses the Schedule label, removes the duplicate header menu, and pe
   assert.doesNotMatch(home, /accountMenuButton/);
   assert.match(home, /zts-command-theme/);
   assert.match(home, /role="switch" data-theme-switch aria-checked="true"/);
-  assert.match(home, /\.theme-switch\{[^}]*width:52px;min-height:0;height:30px/);
+  assert.match(home, /\.theme-control>\.theme-switch\{[^}]*width:52px;min-width:52px;max-width:52px;height:30px;min-height:30px;max-height:30px/);
+  assert.doesNotMatch(home, /\.theme-control button\{/);
   assert.match(home, /Night mode on\. Switch to Day mode/);
   assert.match(home, /data-theme-status/);
   assert.match(home, /prefers-color-scheme/);
