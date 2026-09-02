@@ -53,7 +53,7 @@ test('reconciliation and outbox exceptions surface as attention', () => {
   ]), { total: 2, needsAttention: 1, pending: 1, state: 'attention' });
 });
 
-test('integration history exposes only non-sensitive evidence and never invents email delivery', () => {
+test('system-health integration evidence exposes only non-sensitive operational records and never invents email delivery', () => {
   const history = commandHealth.summarizeIntegrationHistory({
     receipts: [{ id: 'receipt-1', operation: 'reschedule', state: 'reconciliation_needed', error_code: 'calendar_rollback_failed', reconciliation_needed_at: '2026-09-02T08:00:00Z' }],
     outbox: [
@@ -70,7 +70,7 @@ test('integration history exposes only non-sensitive evidence and never invents 
   assert.equal(JSON.stringify(history).includes('payload'), false);
 });
 
-test('empty integration evidence is labelled not yet instrumented', () => {
+test('system-health integration evidence labels empty sources not yet instrumented', () => {
   const history = commandHealth.summarizeIntegrationHistory();
   assert.equal(history.email.state, 'not_yet_instrumented');
   assert.equal(history.notion.state, 'not_yet_instrumented');
