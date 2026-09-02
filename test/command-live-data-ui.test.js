@@ -85,15 +85,16 @@ test('mobile shell has the requested destinations, an honest Messages state, and
   assert.match(ui, /activeJobsSection/);
 });
 
-test('Command uses the Schedule label, removes the duplicate header menu, and persists an accessible theme choice', () => {
+test('Command uses the Schedule label, removes the duplicate header menu, and persists an accessible theme switch', () => {
   const home = fs.readFileSync(path.join(root, 'command', 'index.html'), 'utf8');
   assert.match(home, /label:'Schedule'/);
   assert.match(home, /data-jobs-tab="work">Jobs/);
   assert.match(home, /data-jobs-tab="schedule">Calendar/);
   assert.doesNotMatch(home, /accountMenuButton/);
   assert.match(home, /zts-command-theme/);
-  assert.match(home, /data-theme-choice="light">Day/);
-  assert.match(home, /data-theme-choice="dark">Night/);
+  assert.match(home, /role="switch" data-theme-switch aria-checked="true"/);
+  assert.match(home, /Night mode on\. Switch to Day mode/);
+  assert.match(home, /data-theme-status/);
   assert.match(home, /prefers-color-scheme/);
   assert.match(home, /#0083F5/);
 });
