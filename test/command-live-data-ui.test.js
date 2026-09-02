@@ -85,6 +85,19 @@ test('mobile shell has the requested destinations, an honest Messages state, and
   assert.match(ui, /activeJobsSection/);
 });
 
+test('Command uses the Schedule label, removes the duplicate header menu, and persists an accessible theme choice', () => {
+  const home = fs.readFileSync(path.join(root, 'command', 'index.html'), 'utf8');
+  assert.match(home, /label:'Schedule'/);
+  assert.match(home, /data-jobs-tab="work">Jobs/);
+  assert.match(home, /data-jobs-tab="schedule">Calendar/);
+  assert.doesNotMatch(home, /accountMenuButton/);
+  assert.match(home, /zts-command-theme/);
+  assert.match(home, /data-theme-choice="light">Day/);
+  assert.match(home, /data-theme-choice="dark">Night/);
+  assert.match(home, /prefers-color-scheme/);
+  assert.match(home, /#0083F5/);
+});
+
 test('live UI fails closed rather than substituting fixture data after a data error', () => {
   assert.match(ui, /Command failed closed\. No fixture data was substituted\./);
 });
