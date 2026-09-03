@@ -10,6 +10,10 @@ test('Calendar schedule and reschedule controls are owner/admin-only, timezone-e
   assert.doesNotMatch(source, /dialog\.elements/);
   assert.match(source, /event\.preventDefault\(\); event\.stopPropagation\(\)/);
   assert.match(source, /dialog\.showModal\(\)/);
+  assert.match(source, /type="button" value="cancel" data-cancel-schedule/);
+  assert.match(source, /dialog\.close\('cancel'\)/);
+  assert.match(source, /event\.target === dialog/);
+  assert.match(source, /No appointment was created/);
   assert.doesNotMatch(source, /Open booking/); assert.doesNotMatch(source, /\/book\.html/);
   assert.match(source, /Operator remains read-only/); assert.match(source, /Technician sees none/);
   assert.doesNotMatch(source, /payload\.startAt = new Date\(start\)\.toISOString\(\)/);
