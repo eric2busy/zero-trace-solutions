@@ -22,7 +22,7 @@ function validateInput(input) {
   const jobId = String(input.jobId || '').trim(); const idempotencyKey = String(input.idempotencyKey || '').trim();
   const operation = String(input.operation || '').trim(); const version = Number(input.version);
   if (!UUID.test(jobId)) return { ok: false, error: 'invalid_job_id' };
-  if (!['reschedule', 'cancel'].includes(operation)) return { ok: false, error: 'invalid_operation' };
+  if (!['schedule', 'reschedule', 'cancel'].includes(operation)) return { ok: false, error: 'invalid_operation' };
   if (!idempotencyKey || idempotencyKey.length > 200) return { ok: false, error: 'invalid_idempotency_key' };
   if (!Number.isInteger(version) || version < 1) return { ok: false, error: 'invalid_version' };
   if (operation === 'cancel') {
@@ -41,7 +41,7 @@ function calendarClient() {
   return google.calendar({ version: 'v3', auth });
 }
 async function jobForOperation(id) {
-  const rows = await commandData.readJson(`jobs?select=id,status,calendar_event_id,scheduled_start_at,scheduled_end_at,scheduled_timezone,version&id=eq.${encodeURIComponent(id)}&limit=1`);
+  const rows = await commandData.readJson(`jobs?select=id,title,status,calendar_event_id,scheduled_start_at,scheduled_end_at,scheduled_timezone,version&id=eq.${encodeURIComponent(id)}&limit=1`);
   return rows?.[0] || null;
 }
 function snapshot(event) { return { id: event.id, status: event.status || 'confirmed', start: event.start, end: event.end }; }
@@ -62,7 +62,8 @@ async function executeCalendarOperation({ role, authUserId, input, calendar = nu
   const job = await jobForOperation(request.jobId);
   if (!job) return { state: 'not_found' };
   if (job.version !== request.version) return { state: 'stale', currentVersion: job.version };
-  if (job.status !== 'scheduled' || !job.calendar_event_id) fail('calendar_backed_scheduled_job_required', 409);
+  const scheduling = request.operation === 'schedule';
+  if (scheduling ? (job.status !== 'draft' || job.calendar_event_id || job.scheduled_start_at || job.scheduled_end_at) : (job.status !== 'scheduled' || !job.calendar_event_id)) fail(scheduling ? 'unscheduled_draft_job_required' : 'calendar_backed_scheduled_job_required', 409);
   // Fail before reserving a durable operation when Preview has no provider
   // authority. Tests supply a mock explicitly; there is no fallback provider.
   const provider = calendar || calendarClient();
@@ -80,24 +81,31 @@ async function executeCalendarOperation({ role, authUserId, input, calendar = nu
     return { state: receipt.state, replayed: true, correlationId: receipt.correlation_id };
   }
   const calendarId = process.env.GOOGLE_CALENDAR_ID || 'mock-calendar';
-  let before;
+  let before; let createdEventId = null;
   try {
-    const current = await provider.events.get({ calendarId, eventId: job.calendar_event_id });
-    if (!current?.data?.id || current.data.status === 'cancelled') fail('calendar_event_unavailable', 409, receipt.correlation_id);
-    before = snapshot(current.data);
-    if (request.operation === 'reschedule' && !(await eventIsAvailable(provider, calendarId, job.calendar_event_id, request.startAt, request.endAt))) fail('calendar_availability_conflict', 409, receipt.correlation_id);
-    const body = request.operation === 'cancel' ? { status: 'cancelled' } : { start: { dateTime: request.startAt, timeZone: request.timezone }, end: { dateTime: request.endAt, timeZone: request.timezone } };
-    await provider.events.patch({ calendarId, eventId: job.calendar_event_id, requestBody: body });
+    if (scheduling) {
+      if (!(await eventIsAvailable(provider, calendarId, null, request.startAt, request.endAt))) fail('calendar_availability_conflict', 409, receipt.correlation_id);
+      const created = await provider.events.insert({ calendarId, requestBody: { summary: job.title || 'Zero Trace appointment', start: { dateTime: request.startAt, timeZone: request.timezone }, end: { dateTime: request.endAt, timeZone: request.timezone } } });
+      createdEventId = created?.data?.id;
+      if (!createdEventId) fail('calendar_provider_failed', 502, receipt.correlation_id);
+    } else {
+      const current = await provider.events.get({ calendarId, eventId: job.calendar_event_id });
+      if (!current?.data?.id || current.data.status === 'cancelled') fail('calendar_event_unavailable', 409, receipt.correlation_id);
+      before = snapshot(current.data);
+      if (request.operation === 'reschedule' && !(await eventIsAvailable(provider, calendarId, job.calendar_event_id, request.startAt, request.endAt))) fail('calendar_availability_conflict', 409, receipt.correlation_id);
+      const body = request.operation === 'cancel' ? { status: 'cancelled' } : { start: { dateTime: request.startAt, timeZone: request.timezone }, end: { dateTime: request.endAt, timeZone: request.timezone } };
+      await provider.events.patch({ calendarId, eventId: job.calendar_event_id, requestBody: body });
+    }
   } catch (error) {
     if (error.code) throw error;
     fail('calendar_provider_failed', 502, receipt.correlation_id);
   }
   try {
-    const result = await receipts.completeOperation({ receiptId: receipt.receipt_id, actorId, scheduledStartAt: request.startAt, scheduledEndAt: request.endAt, scheduledTimezone: request.timezone });
+    const result = await receipts.completeOperation({ receiptId: receipt.receipt_id, actorId, scheduledStartAt: request.startAt, scheduledEndAt: request.endAt, scheduledTimezone: request.timezone, calendarEventId: createdEventId });
     return { state: 'succeeded', operation: request.operation, result: result?.[0] || null, correlationId: receipt.correlation_id };
   } catch (completionError) {
     try {
-      await restore(provider, calendarId, before);
+      if (scheduling) await provider.events.delete({ calendarId, eventId: createdEventId }); else await restore(provider, calendarId, before);
       await receipts.markOperationForReconciliation({ receiptId: receipt.receipt_id, actorId, errorCode: 'canonical_completion_rolled_back' });
       fail('canonical_completion_rolled_back', 502, receipt.correlation_id);
     } catch (rollbackError) {

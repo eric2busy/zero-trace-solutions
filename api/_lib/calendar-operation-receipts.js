@@ -31,10 +31,10 @@ function markOperationSucceeded({ receiptId, actorId }) {
   });
 }
 
-function completeOperation({ receiptId, actorId, scheduledStartAt = null, scheduledEndAt = null, scheduledTimezone = null }) {
+function completeOperation({ receiptId, actorId, scheduledStartAt = null, scheduledEndAt = null, scheduledTimezone = null, calendarEventId = null }) {
   return rpc('command_complete_job_calendar_operation', {
     p_receipt_id: receiptId, p_actor_id: actorId,
-    p_scheduled_start_at: scheduledStartAt, p_scheduled_end_at: scheduledEndAt, p_scheduled_timezone: scheduledTimezone,
+    p_scheduled_start_at: scheduledStartAt, p_scheduled_end_at: scheduledEndAt, p_scheduled_timezone: scheduledTimezone, p_calendar_event_id: calendarEventId,
   });
 }
 
