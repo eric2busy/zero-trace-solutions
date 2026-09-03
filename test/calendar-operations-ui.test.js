@@ -5,6 +5,11 @@ test('Calendar schedule and reschedule controls are owner/admin-only, timezone-e
   assert.match(source, /function zonedLocalToIso/); assert.match(source, /timeZoneName: 'longOffset'/); assert.match(source, /ambiguous or unavailable/);
   assert.match(source, /Scheduled ·/); assert.match(source, /Reschedule/); assert.match(source, /name="timezone"/); assert.match(source, /timezoneOptions/);
   assert.match(source, /data-calendar-action="schedule"/); assert.match(source, />Schedule</); assert.match(source, /existing client record/);
+  assert.match(source, /const form = dialog\.querySelector\('form'\)/);
+  assert.match(source, /form\.elements\.timezone/);
+  assert.doesNotMatch(source, /dialog\.elements/);
+  assert.match(source, /event\.preventDefault\(\); event\.stopPropagation\(\)/);
+  assert.match(source, /dialog\.showModal\(\)/);
   assert.doesNotMatch(source, /Open booking/); assert.doesNotMatch(source, /\/book\.html/);
   assert.match(source, /Operator remains read-only/); assert.match(source, /Technician sees none/);
   assert.doesNotMatch(source, /payload\.startAt = new Date\(start\)\.toISOString\(\)/);

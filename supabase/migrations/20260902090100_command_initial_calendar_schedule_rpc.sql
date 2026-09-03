@@ -1,6 +1,12 @@
 -- PREPARED FOR PR REVIEW ONLY. This follows the committed enum extension in
 -- 20260902090000; it has no credentials and performs no provider call.
 
+-- Replacing the completion RPC with an additional optional argument would
+-- otherwise leave the old five-argument overload callable and make existing
+-- five-argument invocations ambiguous. Retire that server-only signature
+-- before installing the extended canonical completion path.
+drop function if exists public.command_complete_job_calendar_operation(uuid, uuid, timestamptz, timestamptz, text);
+
 create or replace function public.command_reserve_job_operation(
   p_job_id uuid, p_idempotency_key text, p_operation public.command_job_operation_kind,
   p_actor_id uuid, p_correlation_id uuid, p_expected_job_version integer,
@@ -57,7 +63,7 @@ begin
   elsif v_receipt.operation = 'cancel' then
     if p_scheduled_start_at is not null or p_scheduled_end_at is not null or p_scheduled_timezone is not null or p_calendar_event_id is not null then raise exception using errcode = '22023', message = 'cancel operation cannot include schedule values'; end if;
     if v_job.calendar_event_id is null or v_job.status <> 'scheduled' then raise exception using errcode = 'P0001', message = 'scheduled calendar-backed job required'; end if;
-    update public.jobs set status = 'cancelled', cancelled_at = now(), updated_by = p_actor_id where id = v_job.id returning * into v_job;
+    update public.jobs set status = 'cancelled', cancelled_at = now(), scheduled_start_at = null, scheduled_end_at = null, scheduled_timezone = null, updated_by = p_actor_id where id = v_job.id returning * into v_job;
   else raise exception using errcode = '22023', message = 'unsupported job operation'; end if;
   update public.job_operation_receipts set state = 'succeeded', completed_at = now(), error_code = null where id = v_receipt.id;
   insert into public.activity_events (actor_id, action, target_type, target_id, authority_level, correlation_id, idempotency_key, outcome, metadata)
