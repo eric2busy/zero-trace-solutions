@@ -92,7 +92,7 @@ async function listCustomers() {
 }
 
 async function listJobs() {
-  const jobs = await readJson('jobs?select=id,kind,status,customer_id,organization_id,service_location_id,title,scheduled_start_at,scheduled_end_at,scheduled_timezone,source_system,completed_at,cancelled_at,version,created_at,updated_at&order=scheduled_start_at.asc.nullslast,updated_at.desc&limit=100');
+  const jobs = await readJson('jobs?select=id,kind,status,customer_id,organization_id,service_location_id,title,scheduled_start_at,scheduled_end_at,scheduled_timezone,calendar_event_id,source_system,completed_at,cancelled_at,version,created_at,updated_at&order=scheduled_start_at.asc.nullslast,updated_at.desc&limit=100');
   // Assignment display is intentionally limited to the active planning role
   // and existing actor display name. Do not expose actor IDs, contact details,
   // permissions, or historical assignments to the Command browser.

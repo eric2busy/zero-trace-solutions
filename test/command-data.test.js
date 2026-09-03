@@ -115,6 +115,7 @@ test('jobs read contract exposes schedule, active assignments, and minimal locat
 
   assert.deepEqual(result, { jobs: [], assignments: [], locations: [] });
   assert.equal(urls.some(url => url.includes('/jobs?')), true);
+  assert.match(urls.find(url => url.includes('/jobs?')), /calendar_event_id/);
   assert.equal(urls.some(url => url.includes('/job_assignments?')), true);
   const assignmentRead = urls.find(url => url.includes('/job_assignments?'));
   assert.ok(assignmentRead);
