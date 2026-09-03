@@ -39,7 +39,7 @@ test('live UI renders only active assignment role and display name without actor
   assert.doesNotMatch(ui, /method:\s*['\"](?:POST|PATCH|PUT|DELETE)/);
 });
 
-test('schedule uses a read-only day/week presentation with loading, empty, and failed-closed states', () => {
+test('calendar uses a read-only day/week presentation with loading, empty, and failed-closed states', () => {
   const scheduleHelper = fs.readFileSync(path.join(root, 'command', 'schedule-view.js'), 'utf8');
   assert.match(ui, /function renderScheduleLoading/);
   assert.match(ui, /function renderScheduleError/);
@@ -90,11 +90,23 @@ test('mobile shell preserves the requested navigation, an honest future Messages
   assert.match(ui, /activeJobsSection/);
 });
 
-test('Command uses the Schedule label, removes the duplicate header menu, and persists an accessible theme switch', () => {
+test('Command uses one Jobs navigation destination with Agenda, Calendar, and Table views', () => {
   const home = fs.readFileSync(path.join(root, 'command', 'index.html'), 'utf8');
-  assert.match(home, /label:'Schedule'/);
-  assert.match(home, /data-jobs-tab="work">Jobs/);
+  assert.match(home, /label:'Jobs'/);
+  assert.match(home, /<h2>Jobs<\/h2>/);
+  assert.match(home, /data-jobs-tab="agenda">Agenda/);
   assert.match(home, /data-jobs-tab="schedule">Calendar/);
+  assert.match(home, /data-jobs-tab="table">Table/);
+  assert.doesNotMatch(home, /label:'Schedule'/);
+  assert.match(ui, /function renderAgenda/);
+  assert.match(ui, /agendaGroup\('Today'/);
+  assert.match(ui, /agendaGroup\('Unscheduled'/);
+  assert.match(ui, /data-jobs-view="table"/);
+  assert.match(ui, /data-job-id=/);
+});
+
+test('Command removes the duplicate header menu and persists an accessible theme switch', () => {
+  const home = fs.readFileSync(path.join(root, 'command', 'index.html'), 'utf8');
   assert.doesNotMatch(home, /accountMenuButton/);
   assert.match(home, /zts-command-theme/);
   assert.match(home, /role="switch" data-theme-switch aria-checked="true"/);

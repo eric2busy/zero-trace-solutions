@@ -1,9 +1,11 @@
 const test = require('node:test'); const assert = require('node:assert/strict'); const fs = require('node:fs');
-test('Calendar schedule and reschedule controls are owner/admin-only, timezone-explicit, and explain safe failure states', () => {
+test('Calendar schedule and reschedule controls are owner/admin-only, keep canonical timezone internal, and explain safe failure states', () => {
   const source = fs.readFileSync('command/calendar-operations.js', 'utf8');
   assert.match(source, /\['owner', 'admin'\]/); assert.match(source, /calendar_availability_conflict/); assert.match(source, /canonical_completion_rolled_back/); assert.match(source, /reconciliation_needed/); assert.match(source, /Saving safely/);
   assert.match(source, /function zonedLocalToIso/); assert.match(source, /timeZoneName: 'longOffset'/); assert.match(source, /ambiguous or unavailable/);
-  assert.match(source, /Scheduled ·/); assert.match(source, /Reschedule/); assert.match(source, /name="timezone"/); assert.match(source, /timezoneOptions/);
+  assert.match(source, /Scheduled ·/); assert.match(source, /Reschedule/); assert.match(source, /name="timezone" type="hidden"/); assert.match(source, /canonicalTimezone/);
+  assert.match(source, /locationsById\.get\(job\.service_location_id\)\?\.timezone/);
+  assert.doesNotMatch(source, /<select name="timezone"/);
   assert.match(source, /data-calendar-action="schedule"/); assert.match(source, />Schedule</); assert.match(source, /existing client record/);
   assert.match(source, /const form = dialog\.querySelector\('form'\)/);
   assert.match(source, /form\.elements\.timezone/);
@@ -13,6 +15,9 @@ test('Calendar schedule and reschedule controls are owner/admin-only, timezone-e
   assert.match(source, /type="button" value="cancel" data-cancel-schedule/);
   assert.match(source, /dialog\.close\('cancel'\)/);
   assert.match(source, /event\.target === dialog/);
+  assert.match(source, /max-height:calc\(100dvh - 24px\)/);
+  assert.match(source, /min-width:0/);
+  assert.match(source, /@media\(max-width:380px\)/);
   assert.match(source, /No appointment was created/);
   assert.doesNotMatch(source, /Open booking/); assert.doesNotMatch(source, /\/book\.html/);
   assert.match(source, /Operator remains read-only/); assert.match(source, /Technician sees none/);

@@ -70,7 +70,7 @@
   }
 
   function jobRow(job, index, locationsById, assignmentsByJobId) {
-    return `<div class="list-row"><div class="row-icon">${String(index + 1).padStart(2, '0')}</div><div><div class="row-name">${escapeHtml(job.title)}</div><div class="row-sub">${escapeHtml(formatDate(job.scheduled_start_at))} · ${escapeHtml(titleCase(job.kind))} · ${escapeHtml(titleCase(job.source_system))}</div><div class="row-sub">${escapeHtml(locationLabel(job, locationsById))}</div><div class="row-sub">${escapeHtml(assignmentLabels(job, assignmentsByJobId))}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div>`;
+    return `<div class="list-row" data-job-id="${escapeHtml(job.id)}"><div class="row-icon">${String(index + 1).padStart(2, '0')}</div><div><div class="row-name">${escapeHtml(job.title)}</div><div class="row-sub">${escapeHtml(formatDate(job.scheduled_start_at))} · ${escapeHtml(titleCase(job.kind))} · ${escapeHtml(titleCase(job.source_system))}</div><div class="row-sub">${escapeHtml(locationLabel(job, locationsById))}</div><div class="row-sub">${escapeHtml(assignmentLabels(job, assignmentsByJobId))}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div>`;
   }
 
   function scheduleTime(job, timeZone) {
@@ -117,6 +117,29 @@
     paint();
   }
 
+  function agendaGroup(title, note, jobs, locationsById, assignmentsByJobId) {
+    if (!jobs.length) return '';
+    return `<section class="card panel schedule-day"><div class="schedule-day-head"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(note)}</span></div>${jobs.map((job, index) => jobRow(job, index, locationsById, assignmentsByJobId)).join('')}</section>`;
+  }
+
+  function renderAgenda(jobs, locationsById, assignmentsByJobId) {
+    const agenda = document.querySelector('[data-section="jobs"] [data-jobs-view="agenda"]');
+    if (!agenda) return;
+    const active = jobs.filter(job => !['completed', 'cancelled'].includes(job.status));
+    const scheduled = active.filter(job => job.scheduled_start_at).sort((a, b) => new Date(a.scheduled_start_at) - new Date(b.scheduled_start_at));
+    const today = scheduled.filter(job => isToday(job.scheduled_start_at));
+    const upcoming = scheduled.filter(job => !isToday(job.scheduled_start_at));
+    const unscheduled = active.filter(job => !job.scheduled_start_at);
+    const completed = jobs.filter(job => ['completed', 'cancelled'].includes(job.status));
+    const content = [
+      agendaGroup('Today', `${today.length} ${today.length === 1 ? 'job' : 'jobs'}`, today, locationsById, assignmentsByJobId),
+      agendaGroup('Upcoming', `${upcoming.length} ${upcoming.length === 1 ? 'job' : 'jobs'}`, upcoming, locationsById, assignmentsByJobId),
+      agendaGroup('Unscheduled', `${unscheduled.length} ${unscheduled.length === 1 ? 'job' : 'jobs'}`, unscheduled, locationsById, assignmentsByJobId),
+      agendaGroup('Completed', `${completed.length} ${completed.length === 1 ? 'job' : 'jobs'}`, completed, locationsById, assignmentsByJobId),
+    ].join('');
+    agenda.innerHTML = content || '<div class="card panel"><div class="empty"><strong>No jobs yet</strong><span>Live canonical jobs will appear here.</span></div></div>';
+  }
+
   function renderJobs(data) {
     const jobs = data.jobs || [];
     const locationsById = new Map((data.locations || []).map(location => [location.id, location]));
@@ -131,11 +154,11 @@
     const history = jobs.filter(job => ['completed', 'cancelled'].includes(job.status));
     const section = document.querySelector('[data-section="jobs"]');
     if (section) {
-      const panels = section.querySelectorAll('[data-jobs-view="work"] .card.panel');
+      const panels = section.querySelectorAll('[data-jobs-view="table"] .card.panel');
       if (panels[0]) panels[0].innerHTML = `<div class="panel-head"><div class="panel-title">Active work</div><span class="badge green">${active.length} active</span></div>${active.map((job, index) => jobRow(job, index, locationsById, assignmentsByJobId)).join('') || '<div class="empty"><strong>No active jobs</strong><span>Live canonical jobs will appear here.</span></div>'}`;
       if (panels[1]) panels[1].innerHTML = `<div class="panel-head"><div class="panel-title">Lifecycle history</div><span class="badge gray">Live</span></div>${history.map((job, index) => jobRow(job, index, locationsById, assignmentsByJobId)).join('') || '<div class="empty"><strong>No completed or cancelled jobs</strong><span>History will appear here as work progresses.</span></div>'}`;
-      section.querySelector('.section-header .eyebrow').textContent = 'Field work · Live read-only';
-      const note = section.querySelector('.prototype-note'); if (note) note.textContent = 'Live Supabase job records · operational writes remain disabled';
+      section.querySelector('.section-header .eyebrow').textContent = 'Field work · Live';
+      const note = section.querySelector('.prototype-note'); if (note) note.textContent = 'Live canonical job records · Calendar remains the scheduling authority';
       const activeJobsSection = section.querySelector('#activeJobsSection');
       if (activeJobsSection) {
         activeJobsSection.innerHTML = inProgress.length
@@ -144,6 +167,7 @@
       }
     }
 
+    renderAgenda(jobs, locationsById, assignmentsByJobId);
     const scheduleJobs = active.filter(job => job.scheduled_start_at);
     renderSchedule(window.CommandScheduleView.groupScheduledJobs(scheduleJobs), locationsById, assignmentsByJobId);
   }

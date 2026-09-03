@@ -28,7 +28,7 @@
     const section = document.querySelector('[data-section="jobs"]'); if (!section || !data) return;
     const active = (data.jobs || []).filter(job => !['completed', 'cancelled'].includes(job.status));
     const history = (data.jobs || []).filter(job => ['completed', 'cancelled'].includes(job.status));
-    const panels = section.querySelectorAll('.card.panel');
+    const panels = section.querySelectorAll('[data-jobs-view="table"] .card.panel');
     if (panels[0]) panels[0].innerHTML = `<div class="panel-head"><div class="panel-title">Active work</div><span class="badge green">${active.length} active</span></div>${active.map(row).join('') || '<div class="empty"><strong>No active jobs</strong><span>Live canonical jobs will appear here.</span></div>'}`;
     if (panels[1]) panels[1].innerHTML = `<div class="panel-head"><div class="panel-title">Lifecycle history</div><span class="badge gray">Live</span></div>${history.map((job, index) => row(job, active.length + index)).join('') || '<div class="empty"><strong>No completed or cancelled jobs</strong><span>History will appear here as work progresses.</span></div>'}`;
     section.querySelector('.section-header .eyebrow').textContent = 'Field work · Controlled writes';
