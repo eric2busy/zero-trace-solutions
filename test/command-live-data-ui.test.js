@@ -86,22 +86,22 @@ test('mobile shell preserves the requested navigation, an honest future Messages
   assert.match(home, /more-sheet/);
   assert.match(home, /Sign out/);
   assert.match(home, /prefers-reduced-motion/);
-  assert.match(ui, /inProgress/);
-  assert.match(ui, /activeJobsSection/);
+  assert.match(ui, /jobsList/);
+  assert.match(home, /jobsFilter/);
 });
 
-test('Command uses one Jobs navigation destination with Agenda, Calendar, and Table views', () => {
+test('Command uses one clean Jobs list with a compact operational filter', () => {
   const home = fs.readFileSync(path.join(root, 'command', 'index.html'), 'utf8');
   assert.match(home, /label:'Jobs'/);
   assert.match(home, /<h2>Jobs<\/h2>/);
-  assert.match(home, /data-jobs-tab="agenda">Agenda/);
-  assert.match(home, /data-jobs-tab="schedule">Calendar/);
-  assert.match(home, /data-jobs-tab="table">Table/);
+  assert.match(home, /id="jobsFilter"/);
+  assert.match(home, /Needs scheduling/);
+  assert.match(home, /option value="needs-scheduling"/);
+  assert.doesNotMatch(home, /data-jobs-tab=/);
   assert.doesNotMatch(home, /label:'Schedule'/);
-  assert.match(ui, /function renderAgenda/);
-  assert.match(ui, /agendaGroup\('Today'/);
-  assert.match(ui, /agendaGroup\('Unscheduled'/);
-  assert.match(ui, /data-jobs-view="table"/);
+  assert.match(ui, /data-job-state/);
+  assert.match(ui, /scheduleNote/);
+  assert.match(home, /function filterJobs/);
   assert.match(ui, /data-job-id=/);
 });
 

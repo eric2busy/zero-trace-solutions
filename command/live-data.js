@@ -70,7 +70,9 @@
   }
 
   function jobRow(job, index, locationsById, assignmentsByJobId) {
-    return `<div class="list-row" data-job-id="${escapeHtml(job.id)}"><div class="row-icon">${String(index + 1).padStart(2, '0')}</div><div><div class="row-name">${escapeHtml(job.title)}</div><div class="row-sub">${escapeHtml(formatDate(job.scheduled_start_at))} · ${escapeHtml(titleCase(job.kind))} · ${escapeHtml(titleCase(job.source_system))}</div><div class="row-sub">${escapeHtml(locationLabel(job, locationsById))}</div><div class="row-sub">${escapeHtml(assignmentLabels(job, assignmentsByJobId))}</div></div><span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div>`;
+    const state = [job.scheduled_start_at ? 'scheduled' : 'needs-scheduling', !['completed', 'cancelled'].includes(job.status) ? 'active' : 'completed', job.status].join(' ');
+    const scheduleNote = job.scheduled_start_at ? '' : '<span class="badge amber">Needs scheduling</span>';
+    return `<div class="list-row" data-job-id="${escapeHtml(job.id)}" data-job-state="${escapeHtml(state)}"><div class="row-icon">${String(index + 1).padStart(2, '0')}</div><div><div class="row-name">${escapeHtml(job.title)}</div><div class="row-sub">${escapeHtml(formatDate(job.scheduled_start_at))} · ${escapeHtml(titleCase(job.kind))} · ${escapeHtml(titleCase(job.source_system))}</div><div class="row-sub">${escapeHtml(locationLabel(job, locationsById))}</div><div class="row-sub">${escapeHtml(assignmentLabels(job, assignmentsByJobId))}</div></div><div>${scheduleNote}<span class="badge ${badgeClass(job.status)}">${escapeHtml(titleCase(job.status))}</span></div></div>`;
   }
 
   function scheduleTime(job, timeZone) {
@@ -149,27 +151,15 @@
       assignments.push(assignment);
       assignmentsByJobId.set(assignment.job_id, assignments);
     }
-    const active = jobs.filter(job => !['completed', 'cancelled'].includes(job.status));
-    const inProgress = active.filter(job => String(job.status || '').toLowerCase() === 'in_progress');
-    const history = jobs.filter(job => ['completed', 'cancelled'].includes(job.status));
     const section = document.querySelector('[data-section="jobs"]');
     if (section) {
-      const panels = section.querySelectorAll('[data-jobs-view="table"] .card.panel');
-      if (panels[0]) panels[0].innerHTML = `<div class="panel-head"><div class="panel-title">Active work</div><span class="badge green">${active.length} active</span></div>${active.map((job, index) => jobRow(job, index, locationsById, assignmentsByJobId)).join('') || '<div class="empty"><strong>No active jobs</strong><span>Live canonical jobs will appear here.</span></div>'}`;
-      if (panels[1]) panels[1].innerHTML = `<div class="panel-head"><div class="panel-title">Lifecycle history</div><span class="badge gray">Live</span></div>${history.map((job, index) => jobRow(job, index, locationsById, assignmentsByJobId)).join('') || '<div class="empty"><strong>No completed or cancelled jobs</strong><span>History will appear here as work progresses.</span></div>'}`;
+      const list = section.querySelector('#jobsList');
+      const ordered = [...jobs].sort((a, b) => Number(!a.scheduled_start_at) - Number(!b.scheduled_start_at) || new Date(a.scheduled_start_at || a.updated_at) - new Date(b.scheduled_start_at || b.updated_at));
+      if (list) list.innerHTML = ordered.map((job, index) => jobRow(job, index, locationsById, assignmentsByJobId)).join('') || '<div class="empty"><strong>No jobs yet</strong><span>Live canonical jobs will appear here.</span></div>';
       section.querySelector('.section-header .eyebrow').textContent = 'Field work · Live';
       const note = section.querySelector('.prototype-note'); if (note) note.textContent = 'Live canonical job records · Calendar remains the scheduling authority';
-      const activeJobsSection = section.querySelector('#activeJobsSection');
-      if (activeJobsSection) {
-        activeJobsSection.innerHTML = inProgress.length
-          ? `<div class="card active-job-card"><div class="panel-head"><div><div class="eyebrow">In progress now</div><div class="panel-title">Active jobs</div></div><span class="badge green">${inProgress.length} live</span></div>${inProgress.map((job, index) => jobRow(job, index, locationsById, assignmentsByJobId)).join('')}</div>`
-          : '';
-      }
+      window.CommandJobsFilter?.();
     }
-
-    renderAgenda(jobs, locationsById, assignmentsByJobId);
-    const scheduleJobs = active.filter(job => job.scheduled_start_at);
-    renderSchedule(window.CommandScheduleView.groupScheduledJobs(scheduleJobs), locationsById, assignmentsByJobId);
   }
 
   function renderApprovals(data) {
