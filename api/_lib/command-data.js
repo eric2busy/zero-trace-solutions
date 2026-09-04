@@ -88,7 +88,10 @@ async function listCustomers() {
   // The directory needs only operational location context. Street addresses,
   // contact details, and other unnecessary customer data stay off this view.
   const locations = await readJson('service_locations?select=id,customer_id,organization_id,label,city,region,timezone,updated_at&order=updated_at.desc&limit=200');
-  return { customers, organizations, locations };
+  // This deliberately exposes operational history only: job identity, type,
+  // status, and time. Contacts and note bodies remain outside the directory.
+  const jobs = await readJson('jobs?select=id,kind,status,customer_id,organization_id,service_location_id,title,scheduled_start_at,completed_at,cancelled_at,created_at&order=created_at.desc&limit=200');
+  return { customers, organizations, locations, jobs };
 }
 
 async function listJobs() {
@@ -174,6 +177,55 @@ function validateJobPatch(input) {
   if (!['draft', 'scheduled', 'en_route', 'in_progress', 'completed'].includes(status)) return { ok: false, error: 'invalid_status' };
   if (!Number.isInteger(version) || version < 1) return { ok: false, error: 'invalid_version' };
   return { ok: true, value: { id, title, status, version } };
+}
+
+function validateServiceJobCreation(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'invalid_payload' };
+  const allowed = new Set(['walkthroughJobId', 'title', 'scope', 'idempotencyKey']);
+  if (Object.keys(input).some(key => !allowed.has(key))) return { ok: false, error: 'unsupported_field' };
+  const walkthroughJobId = String(input.walkthroughJobId || '').trim();
+  const title = String(input.title || '').trim().replace(/\s+/g, ' ');
+  const scope = String(input.scope || '').trim().replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ');
+  const idempotencyKey = String(input.idempotencyKey || '').trim();
+  if (!validUuid(walkthroughJobId)) return { ok: false, error: 'invalid_walkthrough_job_id' };
+  if (title.length < 1 || title.length > 200) return { ok: false, error: 'invalid_title' };
+  if (scope.length > 2000) return { ok: false, error: 'invalid_scope' };
+  if (!validUuid(idempotencyKey)) return { ok: false, error: 'invalid_idempotency_key' };
+  return { ok: true, value: { walkthroughJobId, title, scope: scope || null, idempotencyKey } };
+}
+
+async function createServiceJobFromWalkthrough({ authUserId, input }) {
+  const validated = validateServiceJobCreation(input);
+  if (!validated.ok) return { state: 'invalid', error: validated.error };
+  const actorId = await actorForAuthUser(authUserId);
+  if (!actorId) {
+    const error = new Error('Command actor is not provisioned.');
+    error.code = 'COMMAND_ACTOR_NOT_PROVISIONED';
+    throw error;
+  }
+  const { walkthroughJobId, title, scope, idempotencyKey } = validated.value;
+  const receipt = await writeJson('rpc/command_create_service_job_from_walkthrough', 'POST', {
+    p_walkthrough_job_id: walkthroughJobId,
+    p_actor_id: actorId,
+    p_title: title,
+    p_scope: scope,
+    p_idempotency_key: idempotencyKey,
+    p_correlation_id: randomUUID(),
+  });
+  const result = receipt?.[0];
+  if (!result?.job_id) {
+    const error = new Error('Service job operation returned no job receipt.');
+    error.code = 'COMMAND_SERVICE_JOB_MISSING_RECEIPT';
+    throw error;
+  }
+  const jobs = await readJson(`jobs?select=id,kind,status,customer_id,organization_id,service_location_id,title,scheduled_start_at,scheduled_end_at,scheduled_timezone,calendar_event_id,source_system,completed_at,cancelled_at,version,created_at,updated_at&id=eq.${encodeURIComponent(result.job_id)}&limit=1`);
+  const job = jobs?.[0];
+  if (!job) {
+    const error = new Error('Service job receipt could not be read.');
+    error.code = 'COMMAND_SERVICE_JOB_READ_FAILED';
+    throw error;
+  }
+  return { state: result.replayed ? 'replayed' : 'created', job, correlationId: result.correlation_id };
 }
 
 async function listApprovals() {
@@ -343,9 +395,11 @@ module.exports = {
   updateJob,
   actorForAuthUser,
   createJobNote,
+  createServiceJobFromWalkthrough,
   listJobNotes,
   validUuid,
   validateJobNote,
+  validateServiceJobCreation,
   validateCustomerPatch,
   validateJobPatch,
   writeJson,
