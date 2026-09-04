@@ -39,7 +39,7 @@ test('live UI renders only active assignment role and display name without actor
   assert.doesNotMatch(ui, /method:\s*['\"](?:POST|PATCH|PUT|DELETE)/);
 });
 
-test('schedule uses a read-only day/week presentation with loading, empty, and failed-closed states', () => {
+test('calendar uses a read-only day/week presentation with loading, empty, and failed-closed states', () => {
   const scheduleHelper = fs.readFileSync(path.join(root, 'command', 'schedule-view.js'), 'utf8');
   assert.match(ui, /function renderScheduleLoading/);
   assert.match(ui, /function renderScheduleError/);
@@ -86,15 +86,27 @@ test('mobile shell preserves the requested navigation, an honest future Messages
   assert.match(home, /more-sheet/);
   assert.match(home, /Sign out/);
   assert.match(home, /prefers-reduced-motion/);
-  assert.match(ui, /inProgress/);
-  assert.match(ui, /activeJobsSection/);
+  assert.match(ui, /jobsList/);
+  assert.match(home, /jobsFilter/);
 });
 
-test('Command uses the Schedule label, removes the duplicate header menu, and persists an accessible theme switch', () => {
+test('Command uses one clean Jobs list with a compact operational filter', () => {
   const home = fs.readFileSync(path.join(root, 'command', 'index.html'), 'utf8');
-  assert.match(home, /label:'Schedule'/);
-  assert.match(home, /data-jobs-tab="work">Jobs/);
-  assert.match(home, /data-jobs-tab="schedule">Calendar/);
+  assert.match(home, /label:'Jobs'/);
+  assert.match(home, /<h2>Jobs<\/h2>/);
+  assert.match(home, /id="jobsFilter"/);
+  assert.match(home, /Needs scheduling/);
+  assert.match(home, /option value="needs-scheduling"/);
+  assert.doesNotMatch(home, /data-jobs-tab=/);
+  assert.doesNotMatch(home, /label:'Schedule'/);
+  assert.match(ui, /data-job-state/);
+  assert.match(ui, /scheduleNote/);
+  assert.match(home, /function filterJobs/);
+  assert.match(ui, /data-job-id=/);
+});
+
+test('Command removes the duplicate header menu and persists an accessible theme switch', () => {
+  const home = fs.readFileSync(path.join(root, 'command', 'index.html'), 'utf8');
   assert.doesNotMatch(home, /accountMenuButton/);
   assert.match(home, /zts-command-theme/);
   assert.match(home, /role="switch" data-theme-switch aria-checked="true"/);
