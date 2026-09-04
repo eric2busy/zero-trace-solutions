@@ -6,6 +6,7 @@ const commandSearch = require('./_lib/command-search');
 const READ_ROLES = new Set(['owner', 'admin', 'operator']);
 const CUSTOMER_WRITE_ROLES = new Set(['owner', 'admin']);
 const NOTE_ROLES = READ_ROLES;
+const SERVICE_JOB_WRITE_ROLES = CUSTOMER_WRITE_ROLES;
 const RESOURCES = {
   customers: commandData.listCustomers,
   jobs: commandData.listJobs,
@@ -84,19 +85,22 @@ module.exports = async function commandDataHandler(req, res) {
   }
 
   if (req.method === 'POST') {
-    if (!NOTE_ROLES.has(identity.role)) return sendJson(res, 403, { error: 'insufficient_role' });
     const resource = String(req.query?.resource || '');
-    if (resource !== 'note') return sendJson(res, 400, { error: 'unsupported_resource' });
+    if (!['note', 'service-job'].includes(resource)) return sendJson(res, 400, { error: 'unsupported_resource' });
+    if (resource === 'note' && !NOTE_ROLES.has(identity.role)) return sendJson(res, 403, { error: 'insufficient_role' });
+    if (resource === 'service-job' && !SERVICE_JOB_WRITE_ROLES.has(identity.role)) return sendJson(res, 403, { error: 'insufficient_role' });
     const body = await parseBody(req);
     if (!body) return sendJson(res, 400, { error: 'invalid_json' });
     try {
-      const result = await commandData.createJobNote({ authUserId: identity.user.id, input: body });
+      const result = resource === 'note'
+        ? await commandData.createJobNote({ authUserId: identity.user.id, input: body })
+        : await commandData.createServiceJobFromWalkthrough({ authUserId: identity.user.id, input: body });
       if (result.state === 'invalid') return sendJson(res, 400, { error: result.error });
-      return sendJson(res, 201, { ok: true, state: result.state, note: result.note });
+      return sendJson(res, 201, { ok: true, state: result.state, [resource === 'note' ? 'note' : 'job']: result[resource === 'note' ? 'note' : 'job'], correlationId: result.correlationId || null });
     } catch (error) {
-      console.error('command_note_create_failed', { code: error?.code || 'unknown', status: error?.status || null });
+      console.error(resource === 'note' ? 'command_note_create_failed' : 'command_service_job_create_failed', { code: error?.code || 'unknown', status: error?.status || null });
       if (error?.code === 'COMMAND_ACTOR_NOT_PROVISIONED') return sendJson(res, 409, { error: 'command_actor_not_provisioned' });
-      return sendJson(res, 502, { error: 'job_note_create_failed' });
+      return sendJson(res, 502, { error: resource === 'note' ? 'job_note_create_failed' : 'service_job_create_failed' });
     }
   }
 

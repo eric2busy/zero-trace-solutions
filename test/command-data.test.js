@@ -77,7 +77,7 @@ test('a read retries one isolated upstream 401 but preserves persistent failure 
   global.fetch = originalFetch;
 });
 
-test('customer read contract excludes contact PII and returns canonical customers, organizations, and minimal service-location context', async () => {
+test('customer read contract excludes contact PII and returns canonical customers, locations, and operational history', async () => {
   setBaseEnv();
   process.env.SUPABASE_SECRET_KEY = 'sb_secret_example';
   const originalFetch = global.fetch;
@@ -90,9 +90,10 @@ test('customer read contract excludes contact PII and returns canonical customer
   const result = await commandData.listCustomers();
   global.fetch = originalFetch;
 
-  assert.deepEqual(result, { customers: [], organizations: [], locations: [] });
-  assert.equal(urls.length, 3);
+  assert.deepEqual(result, { customers: [], organizations: [], locations: [], jobs: [] });
+  assert.equal(urls.length, 4);
   assert.equal(urls.some(url => url.includes('customer_contacts')), false);
+  assert.equal(urls.some(url => url.includes('/jobs?')), true);
   assert.equal(urls.every(url => !url.includes('normalized_value')), true);
   const locationRead = urls.find(url => url.includes('/service_locations?'));
   assert.ok(locationRead);
